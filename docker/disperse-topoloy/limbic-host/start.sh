@@ -108,6 +108,7 @@ main() {
   find_compose_file
   resolve_compose_cmd
   create_env_if_missing
+  chmod_token_entries
   start_compose
   print_access_entries
 }
