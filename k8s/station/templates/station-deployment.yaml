@@ -1,0 +1,191 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "station.fullname" . }}
+  labels:
+    {{- include "station.labels" . | nindent 4 }}
+    app.kubernetes.io/component: station
+spec:
+  {{- if not .Values.station.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "station.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: station
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/station-configmap.yaml") . | sha256sum }}
+        checksum/default-configs: {{ include (print $.Template.BasePath "/station-default-configs-configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.station.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "station.labels" . | nindent 8 }}
+        app.kubernetes.io/component: station
+        {{- with .Values.station.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "station.serviceAccountName" . }}
+      {{- with .Values.station.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: warp-toolchain
+          image: "{{ .Values.station.toolchainImage.repository }}:{{ .Values.station.toolchainImage.tag }}"
+          imagePullPolicy: {{ .Values.station.toolchainImage.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              cp -f /usr/local/bin/wparse /toolchain/wparse && chmod +x /toolchain/wparse
+              cp -f /usr/local/bin/wpgen /toolchain/wpgen && chmod +x /toolchain/wpgen
+              cp -f /usr/local/bin/wproj /toolchain/wproj && chmod +x /toolchain/wproj
+          volumeMounts:
+            - name: toolchain
+              mountPath: /toolchain
+        - name: wait-deps
+          image: "{{ .Values.station.initImage.repository }}:{{ .Values.station.initImage.tag }}"
+          imagePullPolicy: {{ .Values.station.initImage.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              until nc -z {{ include "station.postgresName" . }} {{ .Values.postgres.service.port }}; do
+                echo "waiting for postgres"
+                sleep 5
+              done
+              until wget -qO- http://{{ include "station.giteaName" . }}:{{ .Values.gitea.service.httpPort }} >/dev/null 2>&1; do
+                echo "waiting for gitea"
+                sleep 5
+              done
+      containers:
+        - name: station
+          {{- with .Values.station.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.station.image.repository }}:{{ .Values.station.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.station.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              git config --global user.name {{ .Values.station.git.userName | quote }}
+              git config --global user.email {{ .Values.station.git.userEmail | quote }}
+              exec /app/wp-station
+          {{- if or .Values.station.timezone.enabled .Values.station.env }}
+          env:
+            {{- if .Values.station.timezone.enabled }}
+            - name: TZ
+              value: {{ .Values.station.timezone.name | quote }}
+            {{- end }}
+            - name: WP_STATION__WEB__HOST
+              value: {{ .Values.station.web.host | quote }}
+            - name: WP_STATION__WEB__PORT
+              value: {{ .Values.station.web.port | quote }}
+            - name: WP_STATION__DATABASE__HOST
+              value: {{ include "station.postgresName" . | quote }}
+            - name: WP_STATION__DATABASE__PORT
+              value: {{ .Values.postgres.service.port | quote }}
+            - name: WP_STATION__DATABASE__NAME
+              value: {{ .Values.postgres.databases.station | quote }}
+            - name: WP_STATION__DATABASE__USERNAME
+              value: {{ .Values.postgres.user | quote }}
+            - name: WP_STATION__DATABASE__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "station.secretName" . }}
+                  key: postgres-password
+            - name: WP_STATION__GITEA__BASE_URL
+              value: {{ printf "http://%s:%v" (include "station.giteaName" .) .Values.gitea.service.httpPort | quote }}
+            - name: WP_STATION__GITEA__USERNAME
+              value: {{ .Values.gitea.adminUsername | quote }}
+            - name: WP_STATION__GITEA__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "station.secretName" . }}
+                  key: gitea-admin-password
+            - name: WP_STATION__FEATURES__DATA_COLLECT_URL
+              value: {{ .Values.station.monitorUrl | quote }}
+            - name: WP_STATION__PROJECT_ROOT
+              value: {{ .Values.station.projectRoot | quote }}
+            {{- if .Values.station.assistBaseUrl }}
+            - name: WP_STATION__ASSIST__BASE_URL
+              value: {{ .Values.station.assistBaseUrl | quote }}
+            {{- end }}
+            {{- with .Values.station.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- with .Values.station.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.station.web.port }}
+              protocol: TCP
+          {{- with .Values.station.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.station.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.station.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: station-config
+              mountPath: {{ .Values.station.configMountPath }}
+              subPath: config.toml
+              readOnly: true
+            - name: default-configs
+              mountPath: {{ .Values.station.defaultConfigsMountPath }}
+              readOnly: true
+            - name: toolchain
+              mountPath: {{ .Values.station.toolchainMountPath }}
+              readOnly: true
+            {{- with .Values.station.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: station-config
+          configMap:
+            name: {{ include "station.stationConfigName" . }}
+        - name: default-configs
+          configMap:
+            name: {{ include "station.defaultConfigsName" . }}
+            items:
+              {{- range $path, $_ := .Files.Glob "default-configs/**" }}
+              - key: {{ trimPrefix "default-configs/" $path | replace "/" "__" }}
+                path: {{ trimPrefix "default-configs/" $path }}
+              {{- end }}
+        - name: toolchain
+          emptyDir: {}
+      {{- with .Values.station.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.station.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.station.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

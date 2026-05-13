@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "wparse.fullname" . }}-test-connection"
+  labels:
+    {{- include "wparse.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: nc
+      image: busybox
+      command: ["sh", "-c"]
+      args: ["nc -vz {{ include "wparse.fullname" . }} {{ .Values.service.primaryPort }}"]
+  restartPolicy: Never

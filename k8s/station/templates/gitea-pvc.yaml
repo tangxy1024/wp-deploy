@@ -1,0 +1,17 @@
+{{- if .Values.gitea.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "station.giteaPvcName" . }}
+  labels:
+    {{- include "station.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    {{- toYaml .Values.gitea.persistence.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.gitea.persistence.size }}
+  {{- with .Values.gitea.persistence.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: wparse
+description: A Helm chart for WarpParse limbic host
+type: application
+version: 0.1.0
+appVersion: "0.23.8-alpha"

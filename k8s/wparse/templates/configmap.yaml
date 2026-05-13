@@ -1,0 +1,15 @@
+{{- $configFiles := .Files.Glob "wparse-config/**" }}
+{{- if not $configFiles }}
+{{- fail "no built-in wparse files found under wparse-config" }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "wparse.fullname" . }}-config
+  labels:
+    {{- include "wparse.labels" . | nindent 4 }}
+data:
+{{- range $path, $_ := $configFiles }}
+  {{ trimPrefix "wparse-config/" $path | replace "/" "__" }}: |-
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}
