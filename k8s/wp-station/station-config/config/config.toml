@@ -25,8 +25,8 @@ username = "gitea"
 password = "123456"
 
 [warparse]
-enabled = false
-ca_file = ""
+enabled = true
+ca_file = "./tls/CA.crt"
 
 project_root = "project_root"
 

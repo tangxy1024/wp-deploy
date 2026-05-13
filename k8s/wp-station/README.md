@@ -11,8 +11,9 @@
 
 ```text
 k8s/station/
-  station-config/config.toml
-  default-configs/
+  station-config/config/config.toml
+  station-config/default-configs/
+  station-config/tls/
   initdb/01-create-databases.sql
   templates/
   values.yaml
@@ -158,7 +159,7 @@ gitea:
 
 ## 配置文件来源
 
-### `station-config/config.toml`
+### `station-config/config/config.toml`
 
 它会被挂载到：
 
@@ -166,7 +167,17 @@ gitea:
 /app/config/config.toml
 ```
 
-### `default-configs/**`
+### `station-config/tls/CA.crt`
+
+如果该文件存在，会一并打进 `station-config` ConfigMap，并挂载到：
+
+```text
+/app/tls/CA.crt
+```
+
+如果该文件不存在，Chart 不会渲染对应 key，也不会挂载该文件。
+
+### `station-config/default-configs/**`
 
 它们会被挂载到：
 

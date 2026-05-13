@@ -154,6 +154,12 @@ spec:
               mountPath: {{ .Values.station.configMountPath }}
               subPath: config.toml
               readOnly: true
+            {{- if .Files.Get "station-config/tls/CA.crt" }}
+            - name: station-config
+              mountPath: /app/tls/CA.crt
+              subPath: CA.crt
+              readOnly: true
+            {{- end }}
             - name: default-configs
               mountPath: {{ .Values.station.defaultConfigsMountPath }}
               readOnly: true

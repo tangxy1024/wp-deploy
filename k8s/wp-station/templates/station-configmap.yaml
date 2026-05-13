@@ -6,4 +6,9 @@ metadata:
     {{- include "station.labels" . | nindent 4 }}
 data:
   config.toml: |-
-{{ .Files.Get "station-config/config.toml" | indent 4 }}
+{{ .Files.Get "station-config/config/config.toml" | indent 4 }}
+  {{- $caCrt := .Files.Get "station-config/tls/CA.crt" }}
+  {{- if $caCrt }}
+  CA.crt: |-
+{{ $caCrt | indent 4 }}
+  {{- end }}
