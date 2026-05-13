@@ -49,5 +49,5 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 {{/* Secret name for /root/.warp_parse. */}}
 {{- define "wparse.warpParseSecretName" -}}
-{{- default (printf "%s-warp-parse" (include "wparse.fullname" .)) .Values.warpParseSecret.existingSecret }}
+{{- default (printf "%s-warp-parse" (include "wparse.fullname" .)) .Values.wparse.warpParseSecret.existingSecret }}
 {{- end }}

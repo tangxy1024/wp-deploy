@@ -171,9 +171,9 @@ spec:
           configMap:
             name: {{ include "station.defaultConfigsName" . }}
             items:
-              {{- range $path, $_ := .Files.Glob "default-configs/**" }}
-              - key: {{ trimPrefix "default-configs/" $path | replace "/" "__" }}
-                path: {{ trimPrefix "default-configs/" $path }}
+              {{- range $path, $_ := .Files.Glob "station-config/default-configs/**" }}
+              - key: {{ trimPrefix "station-config/default-configs/" $path | replace "/" "__" }}
+                path: {{ trimPrefix "station-config/default-configs/" $path }}
               {{- end }}
         - name: toolchain
           emptyDir: {}

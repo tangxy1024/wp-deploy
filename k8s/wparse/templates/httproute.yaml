@@ -1,27 +1,27 @@
-{{- if .Values.httpRoute.enabled -}}
+{{- if .Values.wparse.httpRoute.enabled -}}
 {{- $fullName := include "wparse.fullname" . -}}
-{{- $svcPort := .Values.service.primaryPort -}}
+{{- $svcPort := .Values.wparse.service.primaryPort -}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: {{ $fullName }}
   labels:
     {{- include "wparse.labels" . | nindent 4 }}
-  {{- with .Values.httpRoute.annotations }}
+  {{- with .Values.wparse.httpRoute.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
   parentRefs:
-    {{- with .Values.httpRoute.parentRefs }}
+    {{- with .Values.wparse.httpRoute.parentRefs }}
       {{- toYaml . | nindent 4 }}
     {{- end }}
-  {{- with .Values.httpRoute.hostnames }}
+  {{- with .Values.wparse.httpRoute.hostnames }}
   hostnames:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   rules:
-    {{- range .Values.httpRoute.rules }}
+    {{- range .Values.wparse.httpRoute.rules }}
     {{- with .matches }}
     - matches:
       {{- toYaml . | nindent 8 }}

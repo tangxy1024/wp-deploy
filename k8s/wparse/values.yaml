@@ -1,15 +1,5 @@
 replicaCount: 1
 
-image:
-  repository: ghcr.io/wp-labs/warp-parse
-  pullPolicy: IfNotPresent
-  tag: "0.23.8-alpha"
-
-initImage:
-  repository: busybox
-  pullPolicy: IfNotPresent
-  tag: "1.36"
-
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
@@ -20,103 +10,94 @@ serviceAccount:
   annotations: {}
   name: ""
 
-podAnnotations: {}
-podLabels: {}
-podSecurityContext: {}
-securityContext:
-  runAsUser: 0
-  runAsGroup: 0
-
-# Extra environment variables for the main container.
-env:
-  - name: GIT_REPO
-    value: http://localhost:3000/gitea/project_root.git
-  - name: MONITOR_ENDPOINT
-    value: http://localhost:8428
-
-# Extra envFrom entries for the main container.
-envFrom: []
-
-# Convenience timezone setting. This sets the container env `TZ`.
-timezone:
-  enabled: true
-  name: Asia/Shanghai
-
-command:
-  - wparse
-args:
-  - deamon
-  - --work-root
-  - /app/config
-
 wparse:
+  image:
+    repository: ghcr.io/wp-labs/warp-parse
+    pullPolicy: IfNotPresent
+    tag: "0.23.8-alpha"
+  initImage:
+    repository: busybox
+    pullPolicy: IfNotPresent
+    tag: "1.36"
   workDir: /app/config
   warpParseSecretPath: /root/.warp_parse
-
-warpParseSecret:
-  existingSecret: ""
-  create: true
-  tokenPath: .warp_parse/admin_api.token
-  tls:
+  command:
+    - wparse
+  args:
+    - deamon
+    - --work-root
+    - /app/config
+  env:
+    - name: GIT_REPO
+      value: http://localhost:3000/gitea/project_root.git
+    - name: MONITOR_ENDPOINT
+      value: http://localhost:8428
+  envFrom: []
+  timezone:
+    enabled: true
+    name: Asia/Shanghai
+  podAnnotations: {}
+  podLabels: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+  warpParseSecret:
+    existingSecret: ""
+    create: true
+    tokenPath: .warp_parse/admin_api.token
+    tls:
+      enabled: false
+      crtPath: .warp_parse/tls/server.crt
+      keyPath: .warp_parse/tls/server.key
+  service:
+    type: ClusterIP
+    primaryPort: 19002
+    ports:
+      - name: tcp
+        port: 19002
+        containerPort: 19002
+        targetPort: tcp
+        protocol: TCP
+        nodePort: null
+  adminService:
+    type: ClusterIP
+    port: 19090
+    nodePort: null
+  ingress:
     enabled: false
-    crtPath: .warp_parse/tls/server.crt
-    keyPath: .warp_parse/tls/server.key
-
-service:
-  type: ClusterIP
-  primaryPort: 19002
-  ports:
-    - name: tcp
-      port: 19002
-      containerPort: 19002
-      targetPort: tcp
-      protocol: TCP
-      nodePort: null
-
-adminService:
-  type: ClusterIP
-  port: 19090
-  nodePort: null
-
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-
-httpRoute:
-  enabled: false
-  annotations: {}
-  parentRefs:
-    - name: gateway
-      sectionName: http
-  hostnames:
-    - chart-example.local
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-
-resources: {}
-
-livenessProbe: {}
-readinessProbe: {}
-
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
-
-volumes: []
-volumeMounts: []
-nodeSelector: {}
-tolerations: []
-affinity: {}
+    className: ""
+    annotations: {}
+    hosts:
+      - host: chart-example.local
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls: []
+  httpRoute:
+    enabled: false
+    annotations: {}
+    parentRefs:
+      - name: gateway
+        sectionName: http
+    hostnames:
+      - chart-example.local
+    rules:
+      - matches:
+          - path:
+              type: PathPrefix
+              value: /
+  resources: {}
+  livenessProbe: {}
+  readinessProbe: {}
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 100
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+  volumes: []
+  volumeMounts: []
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}

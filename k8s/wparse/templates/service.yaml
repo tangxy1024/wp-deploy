@@ -5,14 +5,14 @@ metadata:
   labels:
     {{- include "wparse.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.wparse.service.type }}
   ports:
-    {{- range .Values.service.ports }}
+    {{- range .Values.wparse.service.ports }}
     - name: {{ .name }}
       port: {{ .port }}
       targetPort: {{ .targetPort | default .name }}
       protocol: {{ .protocol | default "TCP" }}
-      {{- if and (eq $.Values.service.type "NodePort") .nodePort }}
+      {{- if and (eq $.Values.wparse.service.type "NodePort") .nodePort }}
       nodePort: {{ .nodePort }}
       {{- end }}
     {{- end }}

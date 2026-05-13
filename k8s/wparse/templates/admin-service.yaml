@@ -5,14 +5,14 @@ metadata:
   labels:
     {{- include "wparse.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.adminService.type }}
+  type: {{ .Values.wparse.adminService.type }}
   ports:
     - name: admin
-      port: {{ .Values.adminService.port }}
+      port: {{ .Values.wparse.adminService.port }}
       targetPort: admin
       protocol: TCP
-      {{- if and (eq .Values.adminService.type "NodePort") .Values.adminService.nodePort }}
-      nodePort: {{ .Values.adminService.nodePort }}
+      {{- if and (eq .Values.wparse.adminService.type "NodePort") .Values.wparse.adminService.nodePort }}
+      nodePort: {{ .Values.wparse.adminService.nodePort }}
       {{- end }}
   selector:
     {{- include "wparse.selectorLabels" . | nindent 4 }}

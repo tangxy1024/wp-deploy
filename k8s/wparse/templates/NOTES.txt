@@ -1,26 +1,26 @@
 1. WarpParse services:
-   Admin API service: {{ include "wparse.fullname" . }}-admin:{{ .Values.adminService.port }}
-   Data service: {{ include "wparse.fullname" . }}:{{ .Values.service.primaryPort }}
+   Admin API service: {{ include "wparse.fullname" . }}-admin:{{ .Values.wparse.adminService.port }}
+   Data service: {{ include "wparse.fullname" . }}:{{ .Values.wparse.service.primaryPort }}
 
-{{- if .Values.httpRoute.enabled }}
-{{- if .Values.httpRoute.hostnames }}
-   export APP_HOSTNAME={{ .Values.httpRoute.hostnames | first }}
+{{- if .Values.wparse.httpRoute.enabled }}
+{{- if .Values.wparse.httpRoute.hostnames }}
+   export APP_HOSTNAME={{ .Values.wparse.httpRoute.hostnames | first }}
 {{- else }}
-   export APP_HOSTNAME=$(kubectl get --namespace {{(first .Values.httpRoute.parentRefs).namespace | default .Release.Namespace }} gateway/{{ (first .Values.httpRoute.parentRefs).name }} -o jsonpath="{.spec.listeners[0].hostname}")
+   export APP_HOSTNAME=$(kubectl get --namespace {{(first .Values.wparse.httpRoute.parentRefs).namespace | default .Release.Namespace }} gateway/{{ (first .Values.wparse.httpRoute.parentRefs).name }} -o jsonpath="{.spec.listeners[0].hostname}")
 {{- end }}
    echo "HTTPRoute host: $APP_HOSTNAME"
-{{- else if .Values.ingress.enabled }}
-{{- range $host := .Values.ingress.hosts }}
+{{- else if .Values.wparse.ingress.enabled }}
+{{- range $host := .Values.wparse.ingress.hosts }}
   {{- range .paths }}
-   http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+   http{{ if $.Values.wparse.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
   {{- end }}
 {{- end }}
-{{- else if contains "NodePort" .Values.service.type }}
+{{- else if contains "NodePort" .Values.wparse.service.type }}
    export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "wparse.fullname" . }})
    export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
    echo tcp://$NODE_IP:$NODE_PORT
-{{- else if contains "LoadBalancer" .Values.service.type }}
+{{- else if contains "LoadBalancer" .Values.wparse.service.type }}
    kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "wparse.fullname" . }}
-{{- else if contains "ClusterIP" .Values.service.type }}
-   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "wparse.fullname" . }} {{ .Values.service.primaryPort }}:{{ .Values.service.primaryPort }}
+{{- else if contains "ClusterIP" .Values.wparse.service.type }}
+   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "wparse.fullname" . }} {{ .Values.wparse.service.primaryPort }}:{{ .Values.wparse.service.primaryPort }}
 {{- end }}

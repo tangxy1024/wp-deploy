@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "wparse.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
+  {{- if not .Values.wparse.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
@@ -13,19 +13,19 @@ spec:
       {{- include "wparse.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- if or (and .Values.warpParseSecret.create (not .Values.warpParseSecret.existingSecret)) .Values.podAnnotations }}
+      {{- if or (and .Values.wparse.warpParseSecret.create (not .Values.wparse.warpParseSecret.existingSecret)) .Values.wparse.podAnnotations }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-        {{- if and .Values.warpParseSecret.create (not .Values.warpParseSecret.existingSecret) }}
+        {{- if and .Values.wparse.warpParseSecret.create (not .Values.wparse.warpParseSecret.existingSecret) }}
         checksum/warp-parse-secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
         {{- end }}
-        {{- with .Values.podAnnotations }}
+        {{- with .Values.wparse.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
       {{- end }}
       labels:
         {{- include "wparse.labels" . | nindent 8 }}
-        {{- with .Values.podLabels }}
+        {{- with .Values.wparse.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
@@ -34,14 +34,14 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "wparse.serviceAccountName" . }}
-      {{- with .Values.podSecurityContext }}
+      {{- with .Values.wparse.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       initContainers:
         - name: init-config
-          image: "{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}"
-          imagePullPolicy: {{ .Values.initImage.pullPolicy }}
+          image: "{{ .Values.wparse.initImage.repository }}:{{ .Values.wparse.initImage.tag }}"
+          imagePullPolicy: {{ .Values.wparse.initImage.pullPolicy }}
           command:
             - sh
             - -c
@@ -54,52 +54,52 @@ spec:
               mountPath: {{ .Values.wparse.workDir }}
       containers:
         - name: {{ .Chart.Name }}
-          {{- with .Values.securityContext }}
+          {{- with .Values.wparse.securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- with .Values.command }}
+          image: "{{ .Values.wparse.image.repository }}:{{ .Values.wparse.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.wparse.image.pullPolicy }}
+          {{- with .Values.wparse.command }}
           command:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.args }}
+          {{- with .Values.wparse.args }}
           args:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if or .Values.timezone.enabled .Values.env }}
+          {{- if or .Values.wparse.timezone.enabled .Values.wparse.env }}
           env:
-            {{- if .Values.timezone.enabled }}
+            {{- if .Values.wparse.timezone.enabled }}
             - name: TZ
-              value: {{ .Values.timezone.name | quote }}
+              value: {{ .Values.wparse.timezone.name | quote }}
             {{- end }}
-            {{- with .Values.env }}
+            {{- with .Values.wparse.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}
-          {{- with .Values.envFrom }}
+          {{- with .Values.wparse.envFrom }}
           envFrom:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           ports:
-            {{- range .Values.service.ports }}
+            {{- range .Values.wparse.service.ports }}
             - name: {{ .name }}
               containerPort: {{ .containerPort | default .port }}
               protocol: {{ .protocol | default "TCP" }}
             {{- end }}
             - name: admin
-              containerPort: {{ .Values.adminService.port }}
+              containerPort: {{ .Values.wparse.adminService.port }}
               protocol: TCP
-          {{- with .Values.resources }}
+          {{- with .Values.wparse.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.livenessProbe }}
+          {{- with .Values.wparse.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.readinessProbe }}
+          {{- with .Values.wparse.readinessProbe }}
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -109,7 +109,7 @@ spec:
             - name: warp-parse-secret
               mountPath: {{ .Values.wparse.warpParseSecretPath }}
               readOnly: true
-            {{- with .Values.volumeMounts }}
+            {{- with .Values.wparse.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
       volumes:
@@ -130,24 +130,24 @@ spec:
             items:
               - key: admin_api.token
                 path: admin_api.token
-              {{- if .Values.warpParseSecret.tls.enabled }}
+              {{- if .Values.wparse.warpParseSecret.tls.enabled }}
               - key: tls.crt
                 path: tls/server.crt
               - key: tls.key
                 path: tls/server.key
               {{- end }}
-      {{- with .Values.volumes }}
+      {{- with .Values.wparse.volumes }}
       {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.nodeSelector }}
+      {{- with .Values.wparse.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- with .Values.wparse.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tolerations }}
+      {{- with .Values.wparse.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

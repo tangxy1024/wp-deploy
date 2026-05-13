@@ -11,5 +11,5 @@ spec:
     - name: nc
       image: busybox
       command: ["sh", "-c"]
-      args: ["nc -vz {{ include "wparse.fullname" . }} {{ .Values.service.primaryPort }}"]
+      args: ["nc -vz {{ include "wparse.fullname" . }} {{ .Values.wparse.service.primaryPort }}"]
   restartPolicy: Never

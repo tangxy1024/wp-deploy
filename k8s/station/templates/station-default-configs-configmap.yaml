@@ -1,7 +1,7 @@
-{{- $confFiles := .Files.Glob "default-configs/conf/**" }}
-{{- $connectorFiles := .Files.Glob "default-configs/connectors/**" }}
-{{- $topologyFiles := .Files.Glob "default-configs/topology/**" }}
-{{- $modelFiles := .Files.Glob "default-configs/models/**" }}
+{{- $confFiles := .Files.Glob "station-config/default-configs/conf/**" }}
+{{- $connectorFiles := .Files.Glob "station-config/default-configs/connectors/**" }}
+{{- $topologyFiles := .Files.Glob "station-config/default-configs/topology/**" }}
+{{- $modelFiles := .Files.Glob "station-config/default-configs/models/**" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,18 +10,18 @@ metadata:
     {{- include "station.labels" . | nindent 4 }}
 data:
 {{- range $path, $_ := $confFiles }}
-  {{ trimPrefix "default-configs/" $path | replace "/" "__" }}: |-
+  {{ trimPrefix "station-config/default-configs/" $path | replace "/" "__" }}: |-
 {{ $.Files.Get $path | indent 4 }}
 {{- end }}
 {{- range $path, $_ := $connectorFiles }}
-  {{ trimPrefix "default-configs/" $path | replace "/" "__" }}: |-
+  {{ trimPrefix "station-config/default-configs/" $path | replace "/" "__" }}: |-
 {{ $.Files.Get $path | indent 4 }}
 {{- end }}
 {{- range $path, $_ := $topologyFiles }}
-  {{ trimPrefix "default-configs/" $path | replace "/" "__" }}: |-
+  {{ trimPrefix "station-config/default-configs/" $path | replace "/" "__" }}: |-
 {{ $.Files.Get $path | indent 4 }}
 {{- end }}
 {{- range $path, $_ := $modelFiles }}
-  {{ trimPrefix "default-configs/" $path | replace "/" "__" }}: |-
+  {{ trimPrefix "station-config/default-configs/" $path | replace "/" "__" }}: |-
 {{ $.Files.Get $path | indent 4 }}
 {{- end }}
