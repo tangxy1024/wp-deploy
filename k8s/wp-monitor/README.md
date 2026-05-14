@@ -6,8 +6,6 @@
 - `victoria-logs`：日志存储服务，Service 端口 `9428`
 - `wp-monitor`：监控面板，容器端口 `18080`
 
-Chart 路径：`dev-ops/k8s/alpha`
-
 ## 默认行为
 
 - `victoria-metrics` 和 `victoria-logs` 默认启用持久化卷
