@@ -88,8 +88,12 @@ spec:
             {{- end }}
       volumes:
         - name: postgres-data
+          {{- if .Values.postgres.persistence.enabled }}
           persistentVolumeClaim:
             claimName: {{ include "station.postgresPvcName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
         - name: initdb
           configMap:
             name: {{ include "station.initdbConfigName" . }}

@@ -80,7 +80,7 @@ postgres:
     gitea: gitea
     station: wp-station
   persistence:
-    enabled: true
+    enabled: false
     storageClassName: ""
     size: 10Gi
     accessModes:
@@ -116,7 +116,7 @@ gitea:
   userUid: "1000"
   userGid: "1000"
   persistence:
-    enabled: true
+    enabled: false
     storageClassName: ""
     size: 10Gi
     accessModes:

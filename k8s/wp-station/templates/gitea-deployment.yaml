@@ -110,8 +110,12 @@ spec:
             {{- end }}
       volumes:
         - name: gitea-data
+          {{- if .Values.gitea.persistence.enabled }}
           persistentVolumeClaim:
             claimName: {{ include "station.giteaPvcName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
         {{- with .Values.gitea.volumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

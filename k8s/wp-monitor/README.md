@@ -1,83 +1,128 @@
-# wp-monitor Helm Chart
+# wp-monitor Helm Chart Values
 
-这个目录提供 `wp-monitor` 的 Helm Chart，用于在 Kubernetes 中部署一套最小可用的观测环境，包含以下 3 个服务：
-
-- `victoria-metrics`：指标存储服务，Service 端口 `8428`
-- `victoria-logs`：日志存储服务，Service 端口 `9428`
-- `wp-monitor`：监控面板，容器端口 `18080`
-
-## 默认行为
-
-- `victoria-metrics` 和 `victoria-logs` 默认启用持久化卷
-- `wp-monitor` 默认以 `NodePort` 方式暴露
-- `wp-monitor` 默认 `nodePort` 为 `30428`
-- `wp-monitor` 的配置文件 `app.toml` 由 Helm 自动生成，并指向集群内的 `victoria-metrics` / `victoria-logs` Service
-- 当前 Chart 不创建 `ServiceAccount` 和 `HPA`
-- `Ingress` 为可选项，仅对 `wp-monitor` 生效
-
-## 前置条件
-
-- Kubernetes 集群可用
-- 集群中已经安装 `helm`
-- 集群存在可用的默认 `StorageClass`，或你会在 `values.yaml` 中显式指定 `storageClassName`
-
-如果集群没有动态存储供给能力，`victoria-metrics` 和 `victoria-logs` 的 Pod 会因为 PVC 无法绑定而保持 `Pending`。
+本文档聚焦 `k8s/wp-monitor/values.yaml`，说明每个 values 分组控制的资源和默认行为。
 
 ## 安装
 
-在当前目录执行：
-
 ```bash
-helm upgrade --install monitor . -n default
+helm upgrade --install monitor ./k8s/wp-monitor -n default
 ```
 
-如果希望安装到独立命名空间：
+使用自定义 values 文件：
 
 ```bash
-helm upgrade --install monitor . -n monitor --create-namespace
+helm upgrade --install monitor ./k8s/wp-monitor -n default -f my-values.yaml
 ```
 
-安装前可以先渲染检查：
+渲染检查：
 
 ```bash
-helm lint .
-helm template monitor .
+helm lint ./k8s/wp-monitor
+helm template monitor ./k8s/wp-monitor >/dev/null
 ```
 
-## 访问 wp-monitor
+## Values 使用方式
 
-### NodePort
+- `global.retentionPeriod` 同时作用于 `victoria-metrics` 和 `victoria-logs`。
+- `global.timezone` 同时注入到 `victoria-metrics` 和 `victoria-logs` 容器的 `TZ` 环境变量。
+- `wpMonitor.enabled`、`victoriaMetrics.enabled`、`victoriaLogs.enabled` 可以分别关闭组件；但 `wp-monitor` 的配置文件始终会引用 metrics 和 logs 的 Service 名称，因此如果关闭后端组件，需要自行保证地址可达。
+- `wpMonitor.ingress` 只为 `wp-monitor` Web UI 创建入口，不影响 `victoria-metrics` 和 `victoria-logs`。
 
-默认值：
+## 通用 Values
+
+| Key | 默认值 | 说明 |
+| --- | --- | --- |
+| `nameOverride` | `""` | 覆盖 chart 名称。 |
+| `fullnameOverride` | `""` | 覆盖完整资源名。 |
+| `global.timezone` | `Asia/Shanghai` | Victoria 组件容器时区。 |
+| `global.retentionPeriod` | `15d` | VictoriaMetrics / VictoriaLogs 数据保留时间。 |
+
+## `victoriaMetrics`
+
+| Key | 默认值 | 说明 |
+| --- | --- | --- |
+| `victoriaMetrics.enabled` | `true` | 是否部署 `victoria-metrics`。 |
+| `victoriaMetrics.image.repository` | `victoriametrics/victoria-metrics` | 镜像仓库。 |
+| `victoriaMetrics.image.tag` | `v1.133.0` | 镜像标签。 |
+| `victoriaMetrics.image.pullPolicy` | `IfNotPresent` | 拉取策略。 |
+| `victoriaMetrics.service.type` | `ClusterIP` | Service 类型。 |
+| `victoriaMetrics.service.port` | `8428` | HTTP 服务端口。 |
+| `victoriaMetrics.persistence.enabled` | `true` | 是否创建 PVC 并挂载 `/storage`。 |
+| `victoriaMetrics.persistence.accessModes` | `['ReadWriteOnce']` | PVC 访问模式。 |
+| `victoriaMetrics.persistence.size` | `20Gi` | PVC 大小。 |
+| `victoriaMetrics.persistence.storageClassName` | `""` | 指定 StorageClass；为空时使用集群默认值。 |
+| `victoriaMetrics.resources` | `{}` | 容器资源限制与请求。 |
+
+## `victoriaLogs`
+
+| Key | 默认值 | 说明 |
+| --- | --- | --- |
+| `victoriaLogs.enabled` | `true` | 是否部署 `victoria-logs`。 |
+| `victoriaLogs.image.repository` | `victoriametrics/victoria-logs` | 镜像仓库。 |
+| `victoriaLogs.image.tag` | `v1.43.0` | 镜像标签。 |
+| `victoriaLogs.image.pullPolicy` | `IfNotPresent` | 拉取策略。 |
+| `victoriaLogs.service.type` | `ClusterIP` | Service 类型。 |
+| `victoriaLogs.service.port` | `9428` | HTTP 服务端口。 |
+| `victoriaLogs.persistence.enabled` | `true` | 是否创建 PVC 并挂载 `/storage`。 |
+| `victoriaLogs.persistence.accessModes` | `['ReadWriteOnce']` | PVC 访问模式。 |
+| `victoriaLogs.persistence.size` | `50Gi` | PVC 大小。 |
+| `victoriaLogs.persistence.storageClassName` | `""` | 指定 StorageClass；为空时使用集群默认值。 |
+| `victoriaLogs.maxDiskSpaceUsageBytes` | `50GiB` | 传给 `--retention.maxDiskSpaceUsageBytes` 的值。 |
+| `victoriaLogs.resources` | `{}` | 容器资源限制与请求。 |
+
+## `wpMonitor`
+
+| Key | 默认值 | 说明 |
+| --- | --- | --- |
+| `wpMonitor.enabled` | `true` | 是否部署 `wp-monitor`。 |
+| `wpMonitor.replicaCount` | `1` | `wp-monitor` 副本数。 |
+| `wpMonitor.image.repository` | `ghcr.io/wp-labs/wp-monitor` | 镜像仓库。 |
+| `wpMonitor.image.tag` | `v0.7.1-alpha` | 镜像标签。 |
+| `wpMonitor.image.pullPolicy` | `IfNotPresent` | 拉取策略。 |
+| `wpMonitor.service.type` | `NodePort` | Web Service 类型。 |
+| `wpMonitor.service.nodePort` | `38080` | 仅当 Service 类型为 `NodePort` 时生效。 |
+| `wpMonitor.service.port` | `18080` | Web Service 端口，同时也是容器暴露端口。 |
+| `wpMonitor.resources` | `{}` | 容器资源限制与请求。 |
+| `wpMonitor.podAnnotations` | `{}` | Pod 注解。 |
+| `wpMonitor.podLabels` | `{}` | Pod 标签。 |
+| `wpMonitor.nodeSelector` | `{}` | 节点选择器。 |
+| `wpMonitor.tolerations` | `[]` | 容忍配置。 |
+| `wpMonitor.affinity` | `{}` | 亲和性配置。 |
+| `wpMonitor.ingress.enabled` | `false` | 是否创建 Ingress。 |
+| `wpMonitor.ingress.className` | `""` | IngressClass 名称。 |
+| `wpMonitor.ingress.annotations` | `{}` | Ingress 注解。 |
+| `wpMonitor.ingress.hosts` | `wp-monitor.local` | Ingress 主机名与路径列表。 |
+| `wpMonitor.ingress.tls` | `[]` | Ingress TLS 配置。 |
+
+## 覆盖示例
+
+### 1. 缩短数据保留时间
+
+```yaml
+global:
+  retentionPeriod: 7d
+```
+
+### 2. 调整 PVC 大小
+
+```yaml
+victoriaMetrics:
+  persistence:
+    size: 10Gi
+
+victoriaLogs:
+  persistence:
+    size: 20Gi
+    maxDiskSpaceUsageBytes: 20GiB
+```
+
+### 3. 改为 Ingress 暴露 UI
 
 ```yaml
 wpMonitor:
   service:
-    type: NodePort
+    type: ClusterIP
     port: 18080
-    nodePort: 30428
-```
-
-获取访问地址：
-
-```bash
-export NODE_PORT=$(kubectl get --namespace default -o jsonpath="{.spec.ports[0].nodePort}" services monitor-wp-monitor-wp-monitor)
-export NODE_IP=$(kubectl get nodes --namespace default -o jsonpath="{.items[0].status.addresses[0].address}")
-echo http://$NODE_IP:$NODE_PORT
-```
-
-如果你在 `minikube` 本机环境中，也可以直接访问：
-
-```bash
-http://<minikube-node-ip>:30428
-```
-
-### Ingress
-
-如果希望通过域名访问，可以打开：
-
-```yaml
-wpMonitor:
   ingress:
     enabled: true
     className: nginx
@@ -88,179 +133,14 @@ wpMonitor:
             pathType: Prefix
 ```
 
-然后重新执行：
-
-```bash
-helm upgrade --install monitor . -n default
-```
-
-## 关键配置项
-
-### 全局配置
-
-```yaml
-global:
-  timezone: Asia/Shanghai
-  retentionPeriod: 15d
-```
-
-- `timezone`：容器时区
-- `retentionPeriod`：VictoriaMetrics / VictoriaLogs 的数据保留时间
-
-### victoria-metrics
+### 4. 关闭内置后端，只部署 UI
 
 ```yaml
 victoriaMetrics:
-  image:
-    repository: victoriametrics/victoria-metrics
-    tag: v1.133.0
-  service:
-    type: ClusterIP
-    port: 8428
-  persistence:
-    enabled: true
-    size: 20Gi
-    storageClassName: ""
-```
-
-### victoria-logs
-
-```yaml
-victoriaLogs:
-  image:
-    repository: victoriametrics/victoria-logs
-    tag: v1.43.0
-  service:
-    type: ClusterIP
-    port: 9428
-  persistence:
-    enabled: true
-    size: 50Gi
-    storageClassName: ""
-  maxDiskSpaceUsageBytes: 50GiB
-```
-
-### wp-monitor
-
-```yaml
-wpMonitor:
-  replicaCount: 1
-  image:
-    repository: ghcr.io/wp-labs/wp-monitor
-    tag: latest
-  service:
-    type: NodePort
-    port: 18080
-    nodePort: 30428
-```
-
-## 自定义 values
-
-建议新建覆盖文件，例如 `my-values.yaml`：
-
-```yaml
-global:
-  retentionPeriod: 7d
-
-victoriaMetrics:
-  persistence:
-    size: 10Gi
+  enabled: false
 
 victoriaLogs:
-  persistence:
-    size: 20Gi
-  maxDiskSpaceUsageBytes: 20GiB
-
-wpMonitor:
-  service:
-    type: NodePort
-    nodePort: 30428
+  enabled: false
 ```
 
-安装方式：
-
-```bash
-helm upgrade --install monitor . -n default -f my-values.yaml
-```
-
-## 与 wparse 的接入方式
-
-在 wparse 的 `topology/sinks/infra.d/monitor.toml` 中添加指标 sink：
-
-```toml
-[[sink_group.sinks]]
-name = "metrics_vmetrics_sink"
-connect = "victoriametrics_sink"
-params = { endpoint = "http://monitor-wp-monitor-victoria-metrics.default.svc.cluster.local:8428" }
-```
-
-在 `topology/sinks/infra.d/miss.toml` 中添加 miss sink：
-
-```toml
-[[sink_group.sinks]]
-name = "victorialogs_output"
-connect = "victorialogs_sink"
-params = { endpoint = "http://monitor-wp-monitor-victoria-logs.default.svc.cluster.local:9428" }
-```
-
-如果你的 release 名称或 namespace 不是 `monitor/default`，请同步替换服务域名。
-
-## 常见问题
-
-### 1. `helm install ./ monitor` 报错
-
-`helm install` 的参数顺序是：
-
-```bash
-helm install <release-name> <chart>
-```
-
-当前目录下应执行：
-
-```bash
-helm install monitor .
-```
-
-### 2. Pod 长时间 `Pending`
-
-优先检查 PVC 和 StorageClass：
-
-```bash
-kubectl get pvc -n default
-kubectl get storageclass
-kubectl describe pod <pod-name> -n default
-```
-
-### 3. `wp-monitor` 页面请求 `/layers/snapshot` 返回 500
-
-通常表示 `wp-monitor` 无法访问 `victoria-metrics`，或 `victoria-logs` / `victoria-metrics` 本身没有正常启动。可以先检查：
-
-```bash
-kubectl get pods -n default
-kubectl logs <wp-monitor-pod> -n default
-kubectl logs <victoria-metrics-pod> -n default
-kubectl logs <victoria-logs-pod> -n default
-```
-
-### 4. `victoria-logs` 因锁文件报错
-
-如果出现类似：
-
-```text
-cannot acquire lock on file "/storage/flock.lock"
-```
-
-通常说明旧卷状态异常或上一次退出不干净。在 alpha / 本地环境中，最简单的恢复方式通常是重建 `victoria-logs` 的 PVC，但这会丢失该卷中的日志数据。
-
-## 卸载
-
-```bash
-helm uninstall monitor -n default
-```
-
-如果需要连同 PVC 一起删除，再执行：
-
-```bash
-kubectl delete pvc monitor-wp-monitor-victoria-metrics-data -n default
-kubectl delete pvc monitor-wp-monitor-victoria-logs-data -n default
-```
+如果这样使用，需要自行保证 `wp-monitor` 最终能访问到可用的 metrics / logs 地址；否则页面请求会失败。
