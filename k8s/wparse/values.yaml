@@ -19,14 +19,14 @@ wparse:
     repository: busybox
     pullPolicy: IfNotPresent
     tag: "1.36"
-  workDir: /app/config
+  workDir: /data/config
   warpParseSecretPath: /root/.warp_parse
   command:
     - wparse
   args:
     - deamon
     - --work-root
-    - /app/config
+    - /data/config
   # env:
   #   - name: GIT_REPO
   #     value: http://wp-station-gitea:3000

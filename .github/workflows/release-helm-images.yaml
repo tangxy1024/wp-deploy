@@ -1,0 +1,75 @@
+name: Release Helm Images
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Release tag to create or update
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Resolve release tag
+        id: meta
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            echo "tag_name=${{ inputs.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag_name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build chart image archives
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          for chart_dir in k8s/*; do
+            [[ -f "${chart_dir}/Chart.yaml" ]] || continue
+            for arch in amd64 arm64; do
+              ./scripts/helm-images.sh package "${chart_dir}" "${arch}" dist
+            done
+          done
+          sha256sum dist/*.tar.gz > dist/SHA256SUMS.txt
+
+      - name: Generate release notes
+        run: |
+          cat > dist/RELEASE_NOTES.md <<EOF
+          ## Helm 镜像离线包
+
+          本次发布包含 `k8s/` 目录下每个 Helm chart 默认渲染会使用到的镜像离线包：
+
+          - `wp-monitor-amd64-images.tar.gz`
+          - `wp-monitor-arm64-images.tar.gz`
+          - `wp-station-amd64-images.tar.gz`
+          - `wp-station-arm64-images.tar.gz`
+          - `wparse-amd64-images.tar.gz`
+          - `wparse-arm64-images.tar.gz`
+
+          `SHA256SUMS.txt` 提供所有 tar.gz 的校验和。
+          EOF
+
+      - name: Publish release assets
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.meta.outputs.tag_name }}
+          target_commitish: ${{ github.sha }}
+          body_path: dist/RELEASE_NOTES.md
+          files: |
+            dist/*.tar.gz
+            dist/SHA256SUMS.txt
+          fail_on_unmatched_files: true
+          overwrite_files: true

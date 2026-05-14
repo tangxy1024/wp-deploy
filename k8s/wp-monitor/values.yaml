@@ -47,11 +47,11 @@ wpMonitor:
   replicaCount: 1
   image:
     repository: ghcr.io/wp-labs/wp-monitor
-    tag: latest
+    tag: v0.7.1-alpha
     pullPolicy: IfNotPresent
   service:
     type: NodePort
-    nodePort: 30428
+    nodePort: 38080
     port: 18080
   resources: {}
   podAnnotations: {}
