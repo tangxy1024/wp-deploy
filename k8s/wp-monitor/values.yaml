@@ -17,7 +17,7 @@ victoriaMetrics:
     type: ClusterIP
     port: 8428
   persistence:
-    enabled: true
+    enabled: false
     accessModes:
       - ReadWriteOnce
     size: 20Gi
@@ -34,7 +34,7 @@ victoriaLogs:
     type: ClusterIP
     port: 9428
   persistence:
-    enabled: true
+    enabled: false
     accessModes:
       - ReadWriteOnce
     size: 50Gi
@@ -51,7 +51,7 @@ wpMonitor:
     pullPolicy: IfNotPresent
   service:
     type: NodePort
-    nodePort: 38080
+    nodePort: 30880
     port: 18080
   resources: {}
   podAnnotations: {}
