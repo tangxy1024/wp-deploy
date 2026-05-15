@@ -4,6 +4,13 @@ metadata:
   name: {{ include "wparse.fullname" . }}
   labels:
     {{- include "wparse.labels" . | nindent 4 }}
+{{- $configSource := .Values.wparse.config | default dict }}
+{{- $configType := $configSource.type | default "configmap" }}
+{{- $configPath := $configSource.path | default "" }}
+{{- $useHostPath := eq $configType "hostpath" }}
+{{- if and $useHostPath (empty $configPath) }}
+{{- fail "wparse.config.path is required when wparse.config.type=hostpath" }}
+{{- end }}
 spec:
   {{- if not .Values.wparse.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -15,7 +22,9 @@ spec:
     metadata:
       {{- if or (include "wparse.hasWarpParseSecret" .) .Values.wparse.podAnnotations }}
       annotations:
+        {{- if not $useHostPath }}
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- end }}
         {{- if and (not .Values.wparse.warpParseSecret.existingSecret) (include "wparse.hasBundledWarpParseToken" .) }}
         checksum/warp-parse-secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
         {{- end }}
@@ -45,11 +54,17 @@ spec:
           command:
             - sh
             - -c
+            {{- if $useHostPath }}
+            - mkdir -p {{ .Values.wparse.workDir }}/data/rescue {{ .Values.wparse.workDir }}/data/logs {{ .Values.wparse.workDir }}/data/out_dat {{ .Values.wparse.workDir }}/.run
+            {{- else }}
             - cp -a /config-src/. {{ .Values.wparse.workDir }}/ && mkdir -p {{ .Values.wparse.workDir }}/data/rescue {{ .Values.wparse.workDir }}/data/logs {{ .Values.wparse.workDir }}/data/out_dat {{ .Values.wparse.workDir }}/.run
+            {{- end }}
           volumeMounts:
+            {{- if not $useHostPath }}
             - name: config-source
               mountPath: /config-src
               readOnly: true
+            {{- end }}
             - name: config
               mountPath: {{ .Values.wparse.workDir }}
       containers:
@@ -115,6 +130,7 @@ spec:
             {{- toYaml . | nindent 12 }}
             {{- end }}
       volumes:
+        {{- if not $useHostPath }}
         - name: config-source
           configMap:
             name: {{ include "wparse.fullname" . }}-config
@@ -123,8 +139,15 @@ spec:
               - key: {{ trimPrefix "wparse-config/" $path | replace "/" "__" }}
                 path: {{ trimPrefix "wparse-config/" $path }}
               {{- end }}
+        {{- end }}
         - name: config
+          {{- if $useHostPath }}
+          hostPath:
+            path: {{ $configPath | quote }}
+            type: DirectoryOrCreate
+          {{- else }}
           emptyDir: {}
+          {{- end }}
         {{- if include "wparse.hasWarpParseSecret" . }}
         - name: warp-parse-secret
           secret:

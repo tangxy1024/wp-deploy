@@ -20,6 +20,9 @@ wparse:
     pullPolicy: IfNotPresent
     tag: "1.36"
   workDir: /data/config
+  config:
+    type: configmap
+    path: ""
   warpParseSecretPath: /root/.warp_parse
   command:
     - wparse

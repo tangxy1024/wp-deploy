@@ -38,9 +38,9 @@ station:
   assistBaseUrl: ""
   projectRoot: project_root
   service:
-    type: ClusterIP
+    type: NodePort
     port: 8081
-    nodePort: null
+    nodePort: 30881
   env: []
   envFrom: []
   timezone:

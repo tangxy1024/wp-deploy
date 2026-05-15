@@ -53,22 +53,21 @@ jobs:
           done
           sha256sum dist/*.tar.gz > dist/SHA256SUMS.txt
 
-      - name: Generate release notes
-        run: |
-          cat > dist/RELEASE_NOTES.md <<EOF
-          ## Helm 镜像离线包
+      # - name: Generate release notes
+      #   run: |
+      #     cat > dist/RELEASE_NOTES.md <<EOF
+      #     ## Helm 镜像离线包
 
-          本次发布包含 `k8s/` 目录下每个 Helm chart 默认渲染会使用到的镜像离线包：
+      #     本次发布包含 `k8s/` 目录下每个 Helm chart 默认渲染会使用到的镜像离线包：
+      #     - `wp-monitor-amd64-images.tar.gz`
+      #     - `wp-monitor-arm64-images.tar.gz`
+      #     - `wp-station-amd64-images.tar.gz`
+      #     - `wp-station-arm64-images.tar.gz`
+      #     - `wparse-amd64-images.tar.gz`
+      #     - `wparse-arm64-images.tar.gz`
 
-          - `wp-monitor-amd64-images.tar.gz`
-          - `wp-monitor-arm64-images.tar.gz`
-          - `wp-station-amd64-images.tar.gz`
-          - `wp-station-arm64-images.tar.gz`
-          - `wparse-amd64-images.tar.gz`
-          - `wparse-arm64-images.tar.gz`
-
-          `SHA256SUMS.txt` 提供所有 tar.gz 的校验和。
-          EOF
+      #     `SHA256SUMS.txt` 提供所有 tar.gz 的校验和。
+      #     EOF
 
       - name: Publish release assets
         uses: softprops/action-gh-release@v3

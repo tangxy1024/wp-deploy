@@ -24,7 +24,8 @@ helm template limbic-host ./k8s/wparse >/dev/null
 ## Values配置
 
 - `replicaCount` 只在 `wparse.autoscaling.enabled=false` 时生效。
-- `wparse.workDir` 同时决定 initContainer 复制配置的目标目录、主容器挂载目录，以及默认启动参数中的 `--work-root`。
+- `wparse.workDir` 同时决定 initContainer 初始化目录、主容器挂载目录，以及默认启动参数中的 `--work-root`。
+- `wparse.config.type=hostpath` 时，chart 直接把 `wparse.config.path` 对应的宿主机目录挂载到 `wparse.workDir`，并跳过内置 `ConfigMap` 配置复制。
 - `wparse.service.ports` 是主业务 Service 的端口列表，`wparse.service.primaryPort` 则用于 `Ingress`、`HTTPRoute` 和 chart 测试连接。
 - `wparse.adminService` 始终单独创建一个 Service，但 admin API 是否真正可用仍取决于 `wparse-config/conf/wparse.toml`。
 - `wparse.warpParseSecret.existingSecret` 为空时，chart 会尝试从 `k8s/wparse/.warp_parse/` 下的文件自动创建 Secret。
@@ -57,6 +58,8 @@ helm template limbic-host ./k8s/wparse >/dev/null
 | `wparse.command` | `['wparse']` | 覆盖容器入口命令。 |
 | `wparse.args` | `['deamon', '--work-root', '/data/config']` | 覆盖容器启动参数。当前默认值与 `wparse.workDir` 不一致，如需统一请一起修改。 |
 | `wparse.workDir` | `/data/config` | 配置目录和工作目录挂载点。 |
+| `wparse.config.type` | `configmap` | 配置来源类型；支持 `configmap` 和 `hostpath`。 |
+| `wparse.config.path` | `""` | 当 `type=hostpath` 时使用，表示宿主机目录路径。 |
 | `wparse.warpParseSecretPath` | `/root/.warp_parse` | admin token / TLS Secret 挂载目录。 |
 
 ### 环境与运行时
@@ -178,4 +181,14 @@ wparse:
 wparse:
   warpParseSecret:
     existingSecret: wparse-admin
+```
+
+### 4. 使用宿主机目录作为工作目录
+
+```yaml
+wparse:
+  config:
+    type: hostpath
+    path: /srv/wparse/config
+  workDir: /data/config
 ```
