@@ -84,7 +84,7 @@ helm install wp-monitor ./wp-monitor
 **部署**
 1. 在`wp-station/wp-station-config/config`中填入monitor的实际地址（宿主机ip+NodePort端口）。
 ```bash
-helm install station ./wp-station
+helm install wp-station ./wp-station
 ```
 
 默认情况下会部署上述的deploy、svc、configmap、secret：
