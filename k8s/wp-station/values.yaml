@@ -16,7 +16,7 @@ station:
     pullPolicy: IfNotPresent
     tag: "v0.1.12-alpha"
   toolchainImage:
-    repository: ghcr.io/wp-labs/warp-parse
+    repository: ghcr.io/wp-labs/warp-parse-exp
     pullPolicy: IfNotPresent
     tag: "exp-v0.23.6-12-alpha"
   initImage:
