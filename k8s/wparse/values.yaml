@@ -19,22 +19,15 @@ wparse:
     repository: busybox
     pullPolicy: IfNotPresent
     tag: "1.36"
-  workDir: /data/config
+  workDir: /data
   config:
-    type: configmap
-    path: ""
+    type: hostpath
+    path: "/data/work"
   warpParseSecretPath: /root/.warp_parse
   command:
     - wparse
   args:
     - deamon
-    - --work-root
-    - /data/config
-  # env:
-  #   - name: GIT_REPO
-  #     value: http://wp-station-gitea:3000
-  #   - name: VICTORIA_METRICS_ENDPOINT
-  #     value: http://wp-monitor-victoria-metrics:8428
   envFrom: []
   timezone:
     enabled: true
@@ -49,14 +42,13 @@ wparse:
     existingSecret: ""
   service:
     type: NodePort
-    primaryPort: 19002
+    primaryPort: 30514
     ports:
-      - name: tcp
-        port: 19002
-        containerPort: 19002
-        targetPort: tcp
-        protocol: TCP
-        nodePort: 30092
+      - name: syslog
+        port: 1514
+        containerPort: 1514
+        protocol: UDP
+        nodePort: 30514
   adminService:
     type: NodePort
     port: 19090
@@ -92,8 +84,10 @@ wparse:
     minReplicas: 1
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
   volumes: []
   volumeMounts: []
-  nodeSelector: {}
+  nodeSelector:
+    kubernetes.io/hostname: dayu01.shmh.dysec
   tolerations: []
   affinity: {}
