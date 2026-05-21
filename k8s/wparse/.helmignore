@@ -1,4 +1,6 @@
 .DS_Store
+._*
+*/._*
 .git/
 .gitignore
 .bzr/

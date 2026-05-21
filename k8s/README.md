@@ -93,5 +93,5 @@ helm install wp-station ./wp-station
 
 
 ### 开启TLS
-目前wparse中内置了`wparse-admin`域名的证书，如果存在域名改动。需要使用我提供的脚本进行生成。
+目前wparse中内置了`wparse-admin`域名的证书，如果存在域名改动。需要使用提供的脚本进行生成。
 
