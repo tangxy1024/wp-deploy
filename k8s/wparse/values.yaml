@@ -15,10 +15,6 @@ wparse:
     repository: ghcr.io/wp-labs/warp-parse-exp
     pullPolicy: IfNotPresent
     tag: "exp-v0.23.6-12-alpha"
-  initImage:
-    repository: busybox
-    pullPolicy: IfNotPresent
-    tag: "1.36"
   workDir: /data
   config:
     type: hostpath
@@ -28,18 +24,6 @@ wparse:
     - wparse
   args:
     - deamon
-  envFrom: []
-  timezone:
-    enabled: true
-    name: Asia/Shanghai
-  podAnnotations: {}
-  podLabels: {}
-  podSecurityContext: {}
-  securityContext:
-    runAsUser: 0
-    runAsGroup: 0
-  warpParseSecret:
-    existingSecret: ""
   service:
     type: NodePort
     primaryPort: 30514
@@ -53,6 +37,26 @@ wparse:
     type: NodePort
     port: 19090
     nodePort: 30090
+  nodeSelector:
+    kubernetes.io/hostname: dayu01.shmh.dysec
+
+# 以下是一些通用的配置项，可以根据需要进行修改
+  initImage:
+    repository: busybox
+    pullPolicy: IfNotPresent
+    tag: "1.36"
+  timezone:
+    enabled: true
+    name: Asia/Shanghai
+  envFrom: []
+  podAnnotations: {}
+  podLabels: {}
+  podSecurityContext: {}
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+  warpParseSecret:
+    existingSecret: ""
   ingress:
     enabled: false
     className: ""
@@ -87,7 +91,5 @@ wparse:
     # targetMemoryUtilizationPercentage: 80
   volumes: []
   volumeMounts: []
-  nodeSelector:
-    kubernetes.io/hostname: dayu01.shmh.dysec
   tolerations: []
   affinity: {}
