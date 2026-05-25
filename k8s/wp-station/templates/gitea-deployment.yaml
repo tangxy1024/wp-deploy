@@ -5,6 +5,13 @@ metadata:
   labels:
     {{- include "station.labels" . | nindent 4 }}
     app.kubernetes.io/component: gitea
+{{- $persistence := .Values.gitea.persistence | default dict }}
+{{- $persistenceType := $persistence.type | default "storageClass" }}
+{{- $persistencePath := $persistence.path | default "" }}
+{{- $useHostPath := and $persistence.enabled (eq $persistenceType "hostpath") }}
+{{- if and $useHostPath (empty $persistencePath) }}
+{{- fail "gitea.persistence.path is required when gitea.persistence.type=hostpath" }}
+{{- end }}
 spec:
   replicas: 1
   selector:
@@ -111,8 +118,14 @@ spec:
       volumes:
         - name: gitea-data
           {{- if .Values.gitea.persistence.enabled }}
+          {{- if $useHostPath }}
+          hostPath:
+            path: {{ $persistencePath | quote }}
+            type: DirectoryOrCreate
+          {{- else }}
           persistentVolumeClaim:
             claimName: {{ include "station.giteaPvcName" . }}
+          {{- end }}
           {{- else }}
           emptyDir: {}
           {{- end }}

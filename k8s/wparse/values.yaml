@@ -11,14 +11,10 @@ serviceAccount:
   name: ""
 
 wparse:
-  image:
-    repository: ghcr.io/wp-labs/warp-parse-exp
-    pullPolicy: IfNotPresent
-    tag: "exp-v0.23.6-12-alpha"
-  workDir: /data
   config:
     type: hostpath
     path: "/data/work"
+  workDir: /data
   warpParseSecretPath: /root/.warp_parse
   command:
     - wparse
@@ -26,13 +22,12 @@ wparse:
     - deamon
   service:
     type: NodePort
-    primaryPort: 30514
     ports:
-      - name: syslog
-        port: 1514
-        containerPort: 1514
-        protocol: UDP
-        nodePort: 30514
+      # 追加一个UDP端口
+      - name: syslog      # 任意名字
+        port: 1514        # source监听的端口
+        protocol: UDP     # 端口协议，TCP或UDP
+        nodePort: 30514   # 宿主机暴露的端口，范围30000-32767
   adminService:
     type: NodePort
     port: 19090
@@ -41,6 +36,10 @@ wparse:
     kubernetes.io/hostname: dayu01.shmh.dysec
 
 # 以下是一些通用的配置项，可以根据需要进行修改
+  image:
+    repository: ghcr.io/wp-labs/warp-parse-exp
+    pullPolicy: IfNotPresent
+    tag: "exp-v0.23.6-12-alpha"
   initImage:
     repository: busybox
     pullPolicy: IfNotPresent

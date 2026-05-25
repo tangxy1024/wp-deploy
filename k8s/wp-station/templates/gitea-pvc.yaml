@@ -1,4 +1,5 @@
-{{- if .Values.gitea.persistence.enabled }}
+{{- if and .Values.gitea.persistence.enabled (ne (.Values.gitea.persistence.type | default "storageClass") "hostpath") }}
+{{- $storageClass := .Values.gitea.persistence.storageClass | default dict }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -7,11 +8,11 @@ metadata:
     {{- include "station.labels" . | nindent 4 }}
 spec:
   accessModes:
-    {{- toYaml .Values.gitea.persistence.accessModes | nindent 4 }}
+    {{- toYaml $storageClass.accessModes | nindent 4 }}
   resources:
     requests:
-      storage: {{ .Values.gitea.persistence.size }}
-  {{- with .Values.gitea.persistence.storageClassName }}
+      storage: {{ $storageClass.size }}
+  {{- with $storageClass.storageClassName }}
   storageClassName: {{ . | quote }}
   {{- end }}
 {{- end }}

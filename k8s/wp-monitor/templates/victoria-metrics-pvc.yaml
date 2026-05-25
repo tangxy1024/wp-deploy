@@ -1,4 +1,5 @@
-{{- if and .Values.victoriaMetrics.enabled .Values.victoriaMetrics.persistence.enabled }}
+{{- if and .Values.victoriaMetrics.enabled .Values.victoriaMetrics.persistence.enabled (ne (.Values.victoriaMetrics.persistence.type | default "storageClass") "hostpath") }}
+{{- $storageClass := .Values.victoriaMetrics.persistence.storageClass | default dict }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -7,11 +8,11 @@ metadata:
     {{- include "wp-monitor.labels" . | nindent 4 }}
 spec:
   accessModes:
-    {{- toYaml .Values.victoriaMetrics.persistence.accessModes | nindent 4 }}
+    {{- toYaml $storageClass.accessModes | nindent 4 }}
   resources:
     requests:
-      storage: {{ .Values.victoriaMetrics.persistence.size }}
-  {{- with .Values.victoriaMetrics.persistence.storageClassName }}
+      storage: {{ $storageClass.size }}
+  {{- with $storageClass.storageClassName }}
   storageClassName: {{ . | quote }}
   {{- end }}
 {{- end }}

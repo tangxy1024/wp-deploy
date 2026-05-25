@@ -11,6 +11,24 @@ serviceAccount:
   name: ""
 
 station:
+  web:
+    host: 0.0.0.0
+    port: 8081
+  log:
+    level: info
+  git:
+    userName: WarpStation
+    userEmail: station@warpparse.local
+  defaultConfigs:
+    type: hostpath
+    path: "/root/wp-stack/product/default-configs"
+  service:
+    type: NodePort
+    port: 8081
+    nodePort: 30881
+  nodeSelector:
+    kubernetes.io/hostname: dayu01.shmh.dysec
+  # 镜像相关配置项
   image:
     repository: ghcr.io/wp-labs/wp-station
     pullPolicy: IfNotPresent
@@ -23,29 +41,20 @@ station:
     repository: busybox
     pullPolicy: IfNotPresent
     tag: "1.36"
-  web:
-    host: 0.0.0.0
-    port: 8081
-  log:
-    level: info
-  git:
-    userName: WarpStation
-    userEmail: station@warpparse.local
+  # 本地启动目录
   configMountPath: /app/config/config.toml
   defaultConfigsMountPath: /app/default_configs
   toolchainMountPath: /app/toolchain
+  # env相关配置
   monitorUrl: http://wp-monitor:18080/wp-monitor
   assistBaseUrl: ""
   projectRoot: project_root
-  service:
-    type: NodePort
-    port: 8081
-    nodePort: 30881
   env: []
   envFrom: []
   timezone:
     enabled: true
     name: Asia/Shanghai
+  # pod和资源相关配置
   podAnnotations: {}
   podLabels: {}
   podSecurityContext: {}
@@ -62,7 +71,6 @@ station:
     targetCPUUtilizationPercentage: 80
   volumes: []
   volumeMounts: []
-  nodeSelector: {}
   tolerations: []
   affinity: {}
 
@@ -73,18 +81,18 @@ postgres:
     pullPolicy: IfNotPresent
   service:
     port: 5432
+  persistence:
+    enabled: true
+    type: hostpath
+    path: "/data/postgres"
+  nodeSelector:
+    kubernetes.io/hostname: dayu01.shmh.dysec
   user: postgres
   password: "123456"
   databases:
     default: postgres
     gitea: gitea
     station: wp-station
-  persistence:
-    enabled: false
-    storageClassName: ""
-    size: 10Gi
-    accessModes:
-      - ReadWriteOnce
   podAnnotations: {}
   podLabels: {}
   podSecurityContext: {}
@@ -94,7 +102,6 @@ postgres:
   readinessProbe: {}
   volumes: []
   volumeMounts: []
-  nodeSelector: {}
   tolerations: []
   affinity: {}
 
@@ -107,6 +114,14 @@ gitea:
     type: ClusterIP
     httpPort: 3000
     sshPort: 22
+  persistence:
+    enabled: true
+    type: hostpath
+    path: "/data/gitea"
+  nodeSelector:
+    kubernetes.io/hostname: dayu01.shmh.dysec
+
+  # gitea自身配置
   adminUsername: gitea
   adminPassword: "123456"
   rootUrl: http://localhost:3000
@@ -115,12 +130,6 @@ gitea:
   sshExternalPort: 222
   userUid: "1000"
   userGid: "1000"
-  persistence:
-    enabled: false
-    storageClassName: ""
-    size: 10Gi
-    accessModes:
-      - ReadWriteOnce
   podAnnotations: {}
   podLabels: {}
   podSecurityContext: {}
@@ -130,6 +139,5 @@ gitea:
   readinessProbe: {}
   volumes: []
   volumeMounts: []
-  nodeSelector: {}
   tolerations: []
   affinity: {}

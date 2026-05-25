@@ -5,6 +5,13 @@ metadata:
   labels:
     {{- include "station.labels" . | nindent 4 }}
     app.kubernetes.io/component: postgres
+{{- $persistence := .Values.postgres.persistence | default dict }}
+{{- $persistenceType := $persistence.type | default "storageClass" }}
+{{- $persistencePath := $persistence.path | default "" }}
+{{- $useHostPath := and $persistence.enabled (eq $persistenceType "hostpath") }}
+{{- if and $useHostPath (empty $persistencePath) }}
+{{- fail "postgres.persistence.path is required when postgres.persistence.type=hostpath" }}
+{{- end }}
 spec:
   replicas: 1
   selector:
@@ -89,8 +96,14 @@ spec:
       volumes:
         - name: postgres-data
           {{- if .Values.postgres.persistence.enabled }}
+          {{- if $useHostPath }}
+          hostPath:
+            path: {{ $persistencePath | quote }}
+            type: DirectoryOrCreate
+          {{- else }}
           persistentVolumeClaim:
             claimName: {{ include "station.postgresPvcName" . }}
+          {{- end }}
           {{- else }}
           emptyDir: {}
           {{- end }}

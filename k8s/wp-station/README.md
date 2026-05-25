@@ -62,6 +62,8 @@ helm template station ./k8s/wp-station >/dev/null
 | `station.git.userName` | `WarpStation` | 启动时执行 `git config --global user.name`。 |
 | `station.git.userEmail` | `station@warpparse.local` | 启动时执行 `git config --global user.email`。 |
 | `station.configMountPath` | `/app/config/config.toml` | 主配置文件挂载路径。 |
+| `station.defaultConfigs.type` | `configmap` | 默认配置来源类型；支持 `configmap` 和 `hostpath`。 |
+| `station.defaultConfigs.path` | `""` | 当 `type=hostpath` 时使用，表示宿主机默认配置目录路径。 |
 | `station.defaultConfigsMountPath` | `/app/default_configs` | 默认配置目录挂载路径。 |
 | `station.toolchainMountPath` | `/app/toolchain` | `wparse/wpgen/wproj` 工具链挂载目录。 |
 | `station.monitorUrl` | `http://wp-monitor:18080/wp-monitor` | 注入 `WP_STATION_MONITOR_URL`。 |
@@ -115,10 +117,12 @@ helm template station ./k8s/wp-station >/dev/null
 | `postgres.databases.default` | `postgres` | 默认数据库名；也用于健康检查。 |
 | `postgres.databases.gitea` | `gitea` | Gitea 使用的数据库名。 |
 | `postgres.databases.station` | `wp-station` | Station 使用的数据库名。 |
-| `postgres.persistence.enabled` | `true` | 是否为 Postgres 创建 PVC。 |
-| `postgres.persistence.storageClassName` | `""` | 指定 StorageClass；为空时使用集群默认值。 |
-| `postgres.persistence.size` | `10Gi` | PVC 大小。 |
-| `postgres.persistence.accessModes` | `['ReadWriteOnce']` | PVC 访问模式。 |
+| `postgres.persistence.enabled` | `true` | 是否为 Postgres 启用持久化；关闭时使用 `emptyDir`。 |
+| `postgres.persistence.type` | `storageClass` | 持久化类型；支持 `storageClass` 和 `hostpath`。 |
+| `postgres.persistence.path` | `""` | 当 `type=hostpath` 时使用，表示宿主机数据目录路径。 |
+| `postgres.persistence.storageClass.storageClassName` | `""` | 指定 StorageClass；为空时使用集群默认值。 |
+| `postgres.persistence.storageClass.size` | `10Gi` | PVC 大小。 |
+| `postgres.persistence.storageClass.accessModes` | `['ReadWriteOnce']` | PVC 访问模式。 |
 | `postgres.podAnnotations` | `{}` | Pod 注解。 |
 | `postgres.podLabels` | `{}` | Pod 标签。 |
 | `postgres.podSecurityContext` | `{}` | Pod 级安全上下文。 |
@@ -150,10 +154,12 @@ helm template station ./k8s/wp-station >/dev/null
 | `gitea.sshExternalPort` | `222` | 写入 Gitea 配置的 `SSH_PORT`。 |
 | `gitea.userUid` | `1000` | 注入 `USER_UID`。 |
 | `gitea.userGid` | `1000` | 注入 `USER_GID`。 |
-| `gitea.persistence.enabled` | `true` | 是否为 Gitea 创建 PVC。 |
-| `gitea.persistence.storageClassName` | `""` | 指定 StorageClass；为空时使用集群默认值。 |
-| `gitea.persistence.size` | `10Gi` | PVC 大小。 |
-| `gitea.persistence.accessModes` | `['ReadWriteOnce']` | PVC 访问模式。 |
+| `gitea.persistence.enabled` | `true` | 是否为 Gitea 启用持久化；关闭时使用 `emptyDir`。 |
+| `gitea.persistence.type` | `storageClass` | 持久化类型；支持 `storageClass` 和 `hostpath`。 |
+| `gitea.persistence.path` | `""` | 当 `type=hostpath` 时使用，表示宿主机数据目录路径。 |
+| `gitea.persistence.storageClass.storageClassName` | `""` | 指定 StorageClass；为空时使用集群默认值。 |
+| `gitea.persistence.storageClass.size` | `10Gi` | PVC 大小。 |
+| `gitea.persistence.storageClass.accessModes` | `['ReadWriteOnce']` | PVC 访问模式。 |
 | `gitea.podAnnotations` | `{}` | Pod 注解。 |
 | `gitea.podLabels` | `{}` | Pod 标签。 |
 | `gitea.podSecurityContext` | `{}` | Pod 级安全上下文。 |
@@ -212,4 +218,29 @@ station:
   env:
     - name: RUST_LOG
       value: info
+```
+
+### 5. 使用宿主机目录作为默认配置目录
+
+```yaml
+station:
+  defaultConfigs:
+    type: hostpath
+    path: /srv/wp-station/default-configs
+```
+
+### 6. 使用宿主机目录持久化数据
+
+```yaml
+postgres:
+  persistence:
+    enabled: true
+    type: hostpath
+    path: /srv/wp-station/postgres
+
+gitea:
+  persistence:
+    enabled: true
+    type: hostpath
+    path: /srv/wp-station/gitea
 ```

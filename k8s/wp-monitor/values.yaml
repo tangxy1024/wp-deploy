@@ -18,12 +18,13 @@ victoriaMetrics:
     port: 8428
     nodePort: 30428
   persistence:
-    enabled: false
-    accessModes:
-      - ReadWriteOnce
-    size: 20Gi
-    storageClassName: ""
+    enabled: true
+    type: hostpath
+    path: "/data/victoria-metrics"
   resources: {}
+  nodeSelector:
+    kubernetes.io/hostname: dayu01.shmh.dysec
+
 
 victoriaLogs:
   enabled: true
@@ -36,11 +37,10 @@ victoriaLogs:
     port: 9428
     nodePort: 30429
   persistence:
-    enabled: false
-    accessModes:
-      - ReadWriteOnce
-    size: 50Gi
-    storageClassName: ""
+    type: hostpath
+    path: "/data/victoria-logs"
+  nodeSelector:
+    kubernetes.io/hostname: dayu01.shmh.dysec
   maxDiskSpaceUsageBytes: 50GiB
   resources: {}
 

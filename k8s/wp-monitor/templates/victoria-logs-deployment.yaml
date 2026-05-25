@@ -1,4 +1,11 @@
 {{- if .Values.victoriaLogs.enabled }}
+{{- $persistence := .Values.victoriaLogs.persistence | default dict }}
+{{- $persistenceType := $persistence.type | default "storageClass" }}
+{{- $persistencePath := $persistence.path | default "" }}
+{{- $useHostPath := and $persistence.enabled (eq $persistenceType "hostpath") }}
+{{- if and $useHostPath (empty $persistencePath) }}
+{{- fail "victoriaLogs.persistence.path is required when victoriaLogs.persistence.type=hostpath" }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,6 +25,10 @@ spec:
         {{- include "wp-monitor.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: victoria-logs
     spec:
+      {{- with .Values.victoriaLogs.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: victoria-logs
           image: "{{ .Values.victoriaLogs.image.repository }}:{{ .Values.victoriaLogs.image.tag }}"
@@ -64,7 +75,13 @@ spec:
       {{- if .Values.victoriaLogs.persistence.enabled }}
       volumes:
         - name: storage
+          {{- if $useHostPath }}
+          hostPath:
+            path: {{ $persistencePath | quote }}
+            type: DirectoryOrCreate
+          {{- else }}
           persistentVolumeClaim:
             claimName: {{ include "wp-monitor.componentFullname" (dict "context" . "name" "victoria-logs-data") }}
+          {{- end }}
       {{- end }}
 {{- end }}

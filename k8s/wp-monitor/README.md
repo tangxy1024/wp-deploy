@@ -47,11 +47,14 @@ helm template monitor ./k8s/wp-monitor >/dev/null
 | `victoriaMetrics.image.pullPolicy` | `IfNotPresent` | 拉取策略。 |
 | `victoriaMetrics.service.type` | `ClusterIP` | Service 类型。 |
 | `victoriaMetrics.service.port` | `8428` | HTTP 服务端口。 |
-| `victoriaMetrics.persistence.enabled` | `true` | 是否创建 PVC 并挂载 `/storage`。 |
-| `victoriaMetrics.persistence.accessModes` | `['ReadWriteOnce']` | PVC 访问模式。 |
-| `victoriaMetrics.persistence.size` | `20Gi` | PVC 大小。 |
-| `victoriaMetrics.persistence.storageClassName` | `""` | 指定 StorageClass；为空时使用集群默认值。 |
+| `victoriaMetrics.persistence.enabled` | `true` | 是否启用持久化并挂载 `/storage`。 |
+| `victoriaMetrics.persistence.type` | `storageClass` | 持久化类型；支持 `storageClass` 和 `hostpath`。 |
+| `victoriaMetrics.persistence.path` | `""` | 当 `type=hostpath` 时使用，表示宿主机数据目录路径。 |
+| `victoriaMetrics.persistence.storageClass.accessModes` | `['ReadWriteOnce']` | PVC 访问模式。 |
+| `victoriaMetrics.persistence.storageClass.size` | `20Gi` | PVC 大小。 |
+| `victoriaMetrics.persistence.storageClass.storageClassName` | `""` | 指定 StorageClass；为空时使用集群默认值。 |
 | `victoriaMetrics.resources` | `{}` | 容器资源限制与请求。 |
+| `victoriaMetrics.nodeSelector` | `{}` | 节点选择器。 |
 
 ## `victoriaLogs`
 
@@ -63,12 +66,15 @@ helm template monitor ./k8s/wp-monitor >/dev/null
 | `victoriaLogs.image.pullPolicy` | `IfNotPresent` | 拉取策略。 |
 | `victoriaLogs.service.type` | `ClusterIP` | Service 类型。 |
 | `victoriaLogs.service.port` | `9428` | HTTP 服务端口。 |
-| `victoriaLogs.persistence.enabled` | `true` | 是否创建 PVC 并挂载 `/storage`。 |
-| `victoriaLogs.persistence.accessModes` | `['ReadWriteOnce']` | PVC 访问模式。 |
-| `victoriaLogs.persistence.size` | `50Gi` | PVC 大小。 |
-| `victoriaLogs.persistence.storageClassName` | `""` | 指定 StorageClass；为空时使用集群默认值。 |
+| `victoriaLogs.persistence.enabled` | `true` | 是否启用持久化并挂载 `/storage`。 |
+| `victoriaLogs.persistence.type` | `storageClass` | 持久化类型；支持 `storageClass` 和 `hostpath`。 |
+| `victoriaLogs.persistence.path` | `""` | 当 `type=hostpath` 时使用，表示宿主机数据目录路径。 |
+| `victoriaLogs.persistence.storageClass.accessModes` | `['ReadWriteOnce']` | PVC 访问模式。 |
+| `victoriaLogs.persistence.storageClass.size` | `50Gi` | PVC 大小。 |
+| `victoriaLogs.persistence.storageClass.storageClassName` | `""` | 指定 StorageClass；为空时使用集群默认值。 |
 | `victoriaLogs.maxDiskSpaceUsageBytes` | `50GiB` | 传给 `--retention.maxDiskSpaceUsageBytes` 的值。 |
 | `victoriaLogs.resources` | `{}` | 容器资源限制与请求。 |
+| `victoriaLogs.nodeSelector` | `{}` | 节点选择器。 |
 
 ## `wpMonitor`
 
@@ -108,15 +114,33 @@ global:
 ```yaml
 victoriaMetrics:
   persistence:
-    size: 10Gi
+    storageClass:
+      size: 10Gi
 
 victoriaLogs:
   persistence:
-    size: 20Gi
-    maxDiskSpaceUsageBytes: 20GiB
+    storageClass:
+      size: 20Gi
+  maxDiskSpaceUsageBytes: 20GiB
 ```
 
-### 3. 改为 Ingress 暴露 UI
+### 3. 使用宿主机目录持久化数据
+
+```yaml
+victoriaMetrics:
+  persistence:
+    enabled: true
+    type: hostpath
+    path: /srv/wp-monitor/victoria-metrics
+
+victoriaLogs:
+  persistence:
+    enabled: true
+    type: hostpath
+    path: /srv/wp-monitor/victoria-logs
+```
+
+### 4. 改为 Ingress 暴露 UI
 
 ```yaml
 wpMonitor:

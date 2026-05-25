@@ -5,6 +5,13 @@ metadata:
   labels:
     {{- include "station.labels" . | nindent 4 }}
     app.kubernetes.io/component: station
+{{- $defaultConfigs := .Values.station.defaultConfigs | default dict }}
+{{- $defaultConfigsType := $defaultConfigs.type | default "configmap" }}
+{{- $defaultConfigsPath := $defaultConfigs.path | default "" }}
+{{- $useDefaultConfigsHostPath := eq $defaultConfigsType "hostpath" }}
+{{- if and $useDefaultConfigsHostPath (empty $defaultConfigsPath) }}
+{{- fail "station.defaultConfigs.path is required when station.defaultConfigs.type=hostpath" }}
+{{- end }}
 spec:
   {{- if not .Values.station.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -17,7 +24,9 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/station-configmap.yaml") . | sha256sum }}
+        {{- if not $useDefaultConfigsHostPath }}
         checksum/default-configs: {{ include (print $.Template.BasePath "/station-default-configs-configmap.yaml") . | sha256sum }}
+        {{- end }}
         checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
         {{- with .Values.station.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -154,7 +163,7 @@ spec:
               mountPath: {{ .Values.station.configMountPath }}
               subPath: config.toml
               readOnly: true
-            {{- if .Files.Get "station-config/tls/CA.crt" }}
+            {{- if .Files.Get "tls/CA.crt" }}
             - name: station-config
               mountPath: /app/tls/CA.crt
               subPath: CA.crt
@@ -174,13 +183,19 @@ spec:
           configMap:
             name: {{ include "station.stationConfigName" . }}
         - name: default-configs
+          {{- if $useDefaultConfigsHostPath }}
+          hostPath:
+            path: {{ $defaultConfigsPath | quote }}
+            type: DirectoryOrCreate
+          {{- else }}
           configMap:
             name: {{ include "station.defaultConfigsName" . }}
             items:
-              {{- range $path, $_ := .Files.Glob "station-config/default-configs/**" }}
-              - key: {{ trimPrefix "station-config/default-configs/" $path | replace "/" "__" }}
-                path: {{ trimPrefix "station-config/default-configs/" $path }}
+              {{- range $path, $_ := .Files.Glob "default-configs/**" }}
+              - key: {{ trimPrefix "default-configs/" $path | replace "/" "__" }}
+                path: {{ trimPrefix "default-configs/" $path }}
               {{- end }}
+          {{- end }}
         - name: toolchain
           emptyDir: {}
       {{- with .Values.station.nodeSelector }}
