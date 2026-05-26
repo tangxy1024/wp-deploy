@@ -4,42 +4,13 @@ set -euo pipefail
 PACKAGE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 
 NAMESPACE="${NAMESPACE:-default}"
-TIMEOUT="${TIMEOUT:-30s}"
+TIMEOUT="${TIMEOUT:-10m}"
 DRY_RUN="${DRY_RUN:-0}"
-KUBECONFIG_PATH="${KUBECONFIG_PATH:-}"
 TMP_DIR=""
-HELM_KUBE_ARGS=()
-
-if [ -n "${KUBECONFIG_PATH}" ]; then
-  HELM_KUBE_ARGS+=(--kubeconfig "${KUBECONFIG_PATH}")
-fi
-
-usage() {
-  cat <<EOF
-Usage: $0 [install|uninstall]
-
-Commands:
-  install     部署 wp-monitor、wparse、wp-station（默认）
-  uninstall   卸载 wp-station、wparse、wp-monitor，不删除 hostPath 数据目录
-
-Environment:
-  NAMESPACE   Kubernetes namespace，默认 default
-  TIMEOUT     Helm 等待超时，默认 30s
-  DRY_RUN     设置为 1 时只渲染/打印操作，不实际部署或卸载
-  KUBECONFIG_PATH  kubeconfig 文件路径；也可以直接使用 Helm 原生 KUBECONFIG 环境变量
-EOF
-}
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "缺少命令: $1" >&2
-    exit 1
-  fi
-}
-
-validate_kubeconfig() {
-  if [ -n "${KUBECONFIG_PATH}" ] && [ ! -f "${KUBECONFIG_PATH}" ]; then
-    echo "找不到 kubeconfig: ${KUBECONFIG_PATH}" >&2
     exit 1
   fi
 }
@@ -89,6 +60,7 @@ write_wp_monitor_values() {
   cat >"${file}" <<EOF
 victoriaMetrics:
   persistence:
+    enabled: true
     type: hostpath
     path: "$(yaml_escape "${persistence_root}/victoria-metrics")"
   nodeSelector:
@@ -96,6 +68,7 @@ victoriaMetrics:
 
 victoriaLogs:
   persistence:
+    enabled: true
     type: hostpath
     path: "$(yaml_escape "${persistence_root}/victoria-logs")"
   nodeSelector:
@@ -144,45 +117,17 @@ helm_upgrade() {
   shift 3
 
   echo "部署 ${release} -> ${chart}"
-  helm "${HELM_KUBE_ARGS[@]}" upgrade --install "${release}" "${chart}" \
+  helm upgrade --install "${release}" "${chart}" \
     --namespace "${NAMESPACE}" \
     --create-namespace \
     -f "${values_file}" \
     "$@"
 }
 
-helm_uninstall() {
-  local release="$1"
-
-  if [ "${DRY_RUN}" = "1" ]; then
-    echo "DRY_RUN: helm ${HELM_KUBE_ARGS[*]} uninstall ${release} --namespace ${NAMESPACE}"
-    return 0
-  fi
-
-  if helm "${HELM_KUBE_ARGS[@]}" status "${release}" --namespace "${NAMESPACE}" >/dev/null 2>&1; then
-    echo "卸载 ${release}"
-    helm "${HELM_KUBE_ARGS[@]}" uninstall "${release}" --namespace "${NAMESPACE}"
-  else
-    echo "跳过 ${release}: release 不存在"
-  fi
-}
-
-uninstall() {
-  require_cmd helm
-  validate_kubeconfig
-
-  echo "卸载 namespace: ${NAMESPACE}"
-  helm_uninstall wp-station
-  helm_uninstall wparse
-  helm_uninstall wp-monitor
-  echo "卸载完成；hostPath 数据目录不会被删除。"
-}
-
-install() {
+main() {
   require_cmd helm
   require_cmd hostname
   require_cmd sed
-  validate_kubeconfig
 
   local wparse_chart="${PACKAGE_ROOT}/helm/wparse"
   local wp_monitor_chart="${PACKAGE_ROOT}/helm/wp-monitor"
@@ -205,7 +150,7 @@ install() {
   local wparse_path default_configs_path persistence_root
   wparse_path="$(prompt_path "wparse 使用的 hostPath 位置" "${PACKAGE_ROOT}/wparse")"
   default_configs_path="$(prompt_path "default-configs 使用的 hostPath 位置" "${PACKAGE_ROOT}/default-configs")"
-  persistence_root="$(prompt_path "持久化根目录" "${PACKAGE_ROOT}/data")"
+  persistence_root="$(prompt_path "持久化根目录" "/data")"
 
   mkdir -p -- \
     "${persistence_root}/postgres" \
@@ -239,27 +184,6 @@ install() {
   echo "wparse hostPath: ${wparse_path}"
   echo "default-configs hostPath: ${default_configs_path}"
   echo "持久化根目录: ${persistence_root}"
-}
-
-main() {
-  local command="${1:-install}"
-
-  case "${command}" in
-    install)
-      install
-      ;;
-    uninstall)
-      uninstall
-      ;;
-    -h|--help|help)
-      usage
-      ;;
-    *)
-      echo "未知命令: ${command}" >&2
-      usage >&2
-      exit 1
-      ;;
-  esac
 }
 
 main "$@"
