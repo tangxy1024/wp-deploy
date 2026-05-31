@@ -1,0 +1,124 @@
+v*:
+  tag_push:
+    - name: release-helm-images
+      services:
+        - docker
+      docker:
+        image: ubuntu:24.04
+      stages:
+        - name: install dependencies
+          script: |
+            set -euo pipefail
+            apt-get update
+            apt-get install -y --no-install-recommends ca-certificates curl gnupg gzip bash coreutils docker.io
+            curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+        - name: login ghcr
+          script: |
+            set -euo pipefail
+            if [ -n "${GHCR_TOKEN:-}" ]; then
+              echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME:-${CNB_TOKEN_USER_NAME:-cnb}}" --password-stdin
+            else
+              echo "GHCR_TOKEN is not set, skip ghcr.io login"
+            fi
+
+        - name: build chart image archives
+          script: |
+            set -euo pipefail
+            mkdir -p dist
+            for chart_dir in k8s/*; do
+              [ -f "${chart_dir}/Chart.yaml" ] || continue
+              for arch in amd64 arm64; do
+                bash ./scripts/helm-images.sh package "${chart_dir}" "${arch}" dist
+              done
+            done
+            sha256sum dist/*.tar.gz > dist/SHA256SUMS.txt
+
+        - name: create release
+          type: git:release
+          options:
+            tag_name: ${CNB_BRANCH}
+            title: ${CNB_BRANCH}
+            description: |
+              ## Helm image offline packages
+
+              This release contains offline image packages used by Helm charts under `k8s/`.
+
+              `SHA256SUMS.txt` provides checksums for all tar.gz packages.
+
+        - name: upload release assets
+          image: cnbcool/attachments:latest
+          settings:
+            attachments:
+              - dist/*.tar.gz
+              - dist/SHA256SUMS.txt
+
+$:
+  release_helm_images:
+    - name: release-helm-images-manual
+      services:
+        - docker
+      docker:
+        image: ubuntu:24.04
+      stages:
+        - name: validate tag
+          script: |
+            set -euo pipefail
+            if [ -z "${tag_name:-}" ]; then
+              echo "tag_name is required" >&2
+              exit 1
+            fi
+            case "${tag_name}" in
+              v*) ;;
+              *)
+                echo "tag_name must start with v: ${tag_name}" >&2
+                exit 1
+                ;;
+            esac
+
+        - name: install dependencies
+          script: |
+            set -euo pipefail
+            apt-get update
+            apt-get install -y --no-install-recommends ca-certificates curl gnupg gzip bash coreutils docker.io
+            curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+        - name: login ghcr
+          script: |
+            set -euo pipefail
+            if [ -n "${GHCR_TOKEN:-}" ]; then
+              echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME:-${CNB_TOKEN_USER_NAME:-cnb}}" --password-stdin
+            else
+              echo "GHCR_TOKEN is not set, skip ghcr.io login"
+            fi
+
+        - name: build chart image archives
+          script: |
+            set -euo pipefail
+            mkdir -p dist
+            for chart_dir in k8s/*; do
+              [ -f "${chart_dir}/Chart.yaml" ] || continue
+              for arch in amd64 arm64; do
+                bash ./scripts/helm-images.sh package "${chart_dir}" "${arch}" dist
+              done
+            done
+            sha256sum dist/*.tar.gz > dist/SHA256SUMS.txt
+
+        - name: create release
+          type: git:release
+          options:
+            tag_name: ${tag_name}
+            title: ${tag_name}
+            description: |
+              ## Helm image offline packages
+
+              This release contains offline image packages used by Helm charts under `k8s/`.
+
+              `SHA256SUMS.txt` provides checksums for all tar.gz packages.
+
+        - name: upload release assets
+          image: cnbcool/attachments:latest
+          settings:
+            attachments:
+              - dist/*.tar.gz
+              - dist/SHA256SUMS.txt

@@ -32,11 +32,11 @@ station:
   image:
     repository: ghcr.io/wp-labs/wp-station
     pullPolicy: IfNotPresent
-    tag: "v0.1.12-alpha"
+    tag: "v0.1.15-alpha"
   toolchainImage:
     repository: ghcr.io/wp-labs/warp-parse-exp
     pullPolicy: IfNotPresent
-    tag: "exp-v0.23.6-12-alpha"
+    tag: "exp-v0.25.1-12-alpha"
   initImage:
     repository: busybox
     pullPolicy: IfNotPresent
@@ -69,8 +69,17 @@ station:
     minReplicas: 1
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
-  volumes: []
-  volumeMounts: []
+  volumes:
+    - name: host-time
+      hostPath:
+        path: /etc/localtime
+        type: File
+  volumeMounts:
+    - name: host-time
+      mountPath: /etc/localtime
+      readOnly: true
+  # volumes: []
+  # volumeMounts: []
   tolerations: []
   affinity: {}
 

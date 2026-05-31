@@ -256,6 +256,9 @@ spec:
         - name: station-config
           configMap:
             name: {{ include "station.stationConfigName" . }}
+        {{- with .Values.station.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
         - name: default-configs
           {{- if $useDefaultConfigsHostPath }}
           hostPath:

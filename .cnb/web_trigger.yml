@@ -1,0 +1,9 @@
+version: "1.0"
+triggers:
+  - name: "手动发布 Helm 镜像离线包"
+    description: "输入 v* tag，构建 k8s Helm charts 使用的镜像离线包并发布附件"
+    params:
+      - name: "tag_name"
+        description: "Release tag，例如 v1.0.0"
+        required: true
+    pipeline: "release_helm_images"

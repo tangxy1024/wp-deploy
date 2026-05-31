@@ -1,0 +1,592 @@
+---
+# Source: station/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: test-station
+  labels:
+    helm.sh/chart: station-0.1.0
+    app.kubernetes.io/name: station
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.6-alpha"
+    app.kubernetes.io/managed-by: Helm
+automountServiceAccountToken: true
+---
+# Source: station/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-station-secret
+  labels:
+    helm.sh/chart: station-0.1.0
+    app.kubernetes.io/name: station
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.6-alpha"
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+stringData:
+  postgres-password: "123456"
+  gitea-admin-password: "123456"
+---
+# Source: station/templates/postgres-initdb-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-station-initdb
+  labels:
+    helm.sh/chart: station-0.1.0
+    app.kubernetes.io/name: station
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.6-alpha"
+    app.kubernetes.io/managed-by: Helm
+data:
+  01-create-databases.sql: |-
+    -- 初始化所需数据库
+    CREATE DATABASE "gitea";
+    CREATE DATABASE "wp-station";
+---
+# Source: station/templates/station-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-station-config
+  labels:
+    helm.sh/chart: station-0.1.0
+    app.kubernetes.io/name: station
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.6-alpha"
+    app.kubernetes.io/managed-by: Helm
+data:
+  config.toml: |-
+    [log]
+    level = "debug"
+    output = "Console"
+    output_path = "./logs/"
+    
+    [web]
+    host = "0.0.0.0"
+    port = 8081
+    
+    [database]
+    host = "postgres"
+    port = 5432
+    name = "wp-station"
+    username = "postgres"
+    password = "123456"
+    max_connections = 10
+    min_connections = 2
+    connect_timeout = 30
+    idle_timeout = 600
+    ssl_mode = "prefer"
+    
+    [gitea]
+    base_url = "http://gitea:3000"
+    username = "gitea"
+    password = "123456"
+    
+    [warparse]
+    enabled = true
+    ca_file = "./tls/CA.crt"
+    
+    project_root = "project_root"
+    
+    [features]
+    data_collect_url = "http://localhost:18081/wp-monitor"
+    
+  CA.crt: |-
+    -----BEGIN CERTIFICATE-----
+    MIIFJTCCAw2gAwIBAgIUfD30cMwlKKcSKK1zaX0FB/VZgywwDQYJKoZIhvcNAQEL
+    BQAwIjEgMB4GA1UEAwwXd2FycC1wYXJzZS1hZG1pbi1hcGktY2EwHhcNMjYwNTA3
+    MTEwNzQ4WhcNMzYwNTA0MTEwNzQ4WjAiMSAwHgYDVQQDDBd3YXJwLXBhcnNlLWFk
+    bWluLWFwaS1jYTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBANDR69gs
+    2xpx7bIYNb+LqRviGrfTsPVzLDoTpZ7eNW5u5zx6atPrjEM4ASSGWZ5MoxWphKBf
+    fYyOHUCb+cxv+1moFbx/IeFlnXOFhyLCxs1lpC/aOHI92hS/GWtMqDMvAF5YiwJD
+    anyl872ATK2SVlCkK/s6e+pPKOUxZ1/mNXjFr/d6ZTWU94V2rWMY7Bp3U/oZgPQj
+    F3QqT/OHgZU7hS+2FyyxZ3Dsat/EWalGAEUkrdu47GTy5pitU+do7szowFjlo0oo
+    0oZ/tennmgGz3hOZ/bVBXX9D6nx8kPe6amTKZIc46Uen8u4thRCzU6PyeB0atTdd
+    AJP8GqDb3ZSFxS6tNWTP/fi/xRGgxdswhTijJbfNDSfzYwy8hlinyv4NecU3SNT/
+    RMs7UF2YezmwW9SQEpa2yc668CSg3VixERbXh4tc6bcEOXBO5gY4Xks/lauBMcQO
+    A/j3bvaF874sEbx1xzY4227t5AjPmmPbC7Cpu87SJEF7j9q6t+DFiTNyVWU1sJ52
+    9bMFp/twbqyrLjSkMVNnEmk0rkdzZoYOUx1alHqLcTZYDi31pDd6+7lbIbXCFwQo
+    y1QmuusCOlDE20mwckk87IwWecCUeF8/NrUULOyS00uGSkSrwxj9mUNwaJ13K0jm
+    xQ8Wuy5CZWaJ7PZT/5H21YWGgJfNfxturvhxAgMBAAGjUzBRMB0GA1UdDgQWBBQX
+    Yv2irAzjoxP3MGvwLTI8dGE/4jAfBgNVHSMEGDAWgBQXYv2irAzjoxP3MGvwLTI8
+    dGE/4jAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4ICAQBtPbLSXOb7
+    OBDJvBdf5ramY0pi+DqpNWyiMSbL/XGCw4moqFLSGswUunIjOnhtmaIGb7S8cZhV
+    NKiwtXY6O4CPdFPlHT6tG2xSRH/DJcMAY/8yGmiE3dE5uNk+cu4yBBvmb7OfZqE+
+    mYhpBFVetf7ekH45caZ1xyHbnmS+t8M3+mHCuY585IPGvzMWyxS7f/zQKsuzIlQ6
+    q38vB0i8toV/n5t0+7ZjNAa9aIx2oc3nUj6raaYRCeQz8PnPSQNnUu17gyzCzhqI
+    a7iyeSvICEOvxFq8PKww8OSuuXK6gjI+uaLju6I3VWXPKSTdImUlUrnKlkLislRP
+    TcTN3CdaLpaPw+MFYYyE2Gn7OBd8vmJUW8BwjxDMEGaSKwm3tHdmT4dkjk/3l1/m
+    m7PA4fmPqk+KhGGd8bHS1/e2bH1j/fFazM1rs7rJQTcyN98oxYYkjMgNyrpZso9b
+    LLz57D1eZApQhP04RMJ9iy8m+RYn2g0vdvmXTgmmEqxiLmW8PX7j1GAcCaRatuwF
+    MjHDtM8YZwBygk1QZ7F9nDC5t2F2/AiM3CA/Wk5MU5cxqx1wAlYUsTn8esD6DXf1
+    nMmXjVGALdAZfQt4imeXfNvrcSM/yExt872wqnOvWS9HHtJgRPQApaQYuBOvJS4N
+    uVHkPjMhXawXPasb3mbsMiu8xcPoJTyVFw==
+    -----END CERTIFICATE-----
+---
+# Source: station/templates/gitea-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-station-gitea
+  labels:
+    helm.sh/chart: station-0.1.0
+    app.kubernetes.io/name: station
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.6-alpha"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+      protocol: TCP
+    - name: ssh
+      port: 22
+      targetPort: ssh
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: station
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/component: gitea
+---
+# Source: station/templates/postgres-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-station-postgres
+  labels:
+    helm.sh/chart: station-0.1.0
+    app.kubernetes.io/name: station
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.6-alpha"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: station
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/component: postgres
+---
+# Source: station/templates/station-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-station
+  labels:
+    helm.sh/chart: station-0.1.0
+    app.kubernetes.io/name: station
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.6-alpha"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 8081
+      targetPort: http
+      protocol: TCP
+      nodePort: 30881
+  selector:
+    app.kubernetes.io/name: station
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/component: station
+---
+# Source: station/templates/gitea-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-station-gitea
+  labels:
+    helm.sh/chart: station-0.1.0
+    app.kubernetes.io/name: station
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.6-alpha"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: gitea
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: station
+      app.kubernetes.io/instance: test
+      app.kubernetes.io/component: gitea
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: station-0.1.0
+        app.kubernetes.io/name: station
+        app.kubernetes.io/instance: test
+        app.kubernetes.io/version: "0.1.6-alpha"
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/component: gitea
+    spec:
+      containers:
+        - name: gitea
+          image: "gitea/gitea:latest"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: USER_UID
+              value: "1000"
+            - name: USER_GID
+              value: "1000"
+            - name: GITEA__database__DB_TYPE
+              value: postgres
+            - name: GITEA__database__HOST
+              value: "test-station-postgres:5432"
+            - name: GITEA__database__NAME
+              value: "gitea"
+            - name: GITEA__database__USER
+              value: "postgres"
+            - name: GITEA__database__PASSWD
+              valueFrom:
+                secretKeyRef:
+                  name: test-station-secret
+                  key: postgres-password
+            - name: GITEA__database__SSL_MODE
+              value: disable
+            - name: GITEA__server__DOMAIN
+              value: "localhost"
+            - name: GITEA__server__ROOT_URL
+              value: "http://localhost:3000"
+            - name: GITEA__server__HTTP_PORT
+              value: "3000"
+            - name: GITEA__server__SSH_DOMAIN
+              value: "localhost"
+            - name: GITEA__server__SSH_PORT
+              value: "222"
+            - name: GITEA__server__DISABLE_SSH
+              value: "false"
+            - name: GITEA__security__INSTALL_LOCK
+              value: "true"
+            - name: GITEA__service__DISABLE_REGISTRATION
+              value: "true"
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+            - name: ssh
+              containerPort: 22
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          volumeMounts:
+            - name: gitea-data
+              mountPath: /data
+      volumes:
+        - name: gitea-data
+          hostPath:
+            path: "/data/gitea"
+            type: DirectoryOrCreate
+      nodeSelector:
+        kubernetes.io/hostname: dayu01.shmh.dysec
+---
+# Source: station/templates/postgres-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-station-postgres
+  labels:
+    helm.sh/chart: station-0.1.0
+    app.kubernetes.io/name: station
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.6-alpha"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: station
+      app.kubernetes.io/instance: test
+      app.kubernetes.io/component: postgres
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: station-0.1.0
+        app.kubernetes.io/name: station
+        app.kubernetes.io/instance: test
+        app.kubernetes.io/version: "0.1.6-alpha"
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/component: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: "postgres:18.3"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRES_DB
+              value: "postgres"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-station-secret
+                  key: postgres-password
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U postgres -d postgres
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U postgres -d postgres
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+      volumes:
+        - name: postgres-data
+          hostPath:
+            path: "/data/postgres"
+            type: DirectoryOrCreate
+        - name: initdb
+          configMap:
+            name: test-station-initdb
+      nodeSelector:
+        kubernetes.io/hostname: dayu01.shmh.dysec
+---
+# Source: station/templates/station-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-station
+  labels:
+    helm.sh/chart: station-0.1.0
+    app.kubernetes.io/name: station
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "0.1.6-alpha"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: station
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: station
+      app.kubernetes.io/instance: test
+      app.kubernetes.io/component: station
+  template:
+    metadata:
+      annotations:
+        checksum/config: f3ec52c9ef3b033a8f5c6009a443a364a46da5062e30530cfdde68ca369303d9
+        checksum/secret: a69b26fc6cd92119297bff894d4abd89455c148bdb9fc2f75cebe52db24f01fc
+      labels:
+        helm.sh/chart: station-0.1.0
+        app.kubernetes.io/name: station
+        app.kubernetes.io/instance: test
+        app.kubernetes.io/version: "0.1.6-alpha"
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/component: station
+    spec:
+      serviceAccountName: test-station
+      initContainers:
+        - name: warp-toolchain
+          image: "ghcr.io/wp-labs/warp-parse-exp:exp-v0.23.6-12-alpha"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              cp -f /usr/local/bin/wparse /toolchain/wparse && chmod +x /toolchain/wparse
+              cp -f /usr/local/bin/wpgen /toolchain/wpgen && chmod +x /toolchain/wpgen
+              cp -f /usr/local/bin/wproj /toolchain/wproj && chmod +x /toolchain/wproj
+          volumeMounts:
+            - name: toolchain
+              mountPath: /toolchain
+        - name: wait-deps
+          image: "busybox:1.36"
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              until nc -z test-station-postgres 5432; do
+                echo "waiting for postgres"
+                sleep 5
+              done
+              until wget -qO- http://test-station-gitea:3000 >/dev/null 2>&1; do
+                echo "waiting for gitea"
+                sleep 5
+              done
+        - name: init-gitea-admin
+          image: "gitea/gitea:latest"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              until wget -qO- http://test-station-gitea:3000 >/dev/null 2>&1; do
+                echo "waiting for gitea"
+                sleep 5
+              done
+              mkdir -p /tmp/gitea-init
+              cat > /tmp/gitea-init/app.ini <<EOF
+              APP_NAME = Gitea
+              RUN_MODE = prod
+
+              [database]
+              DB_TYPE = postgres
+              HOST = test-station-postgres:5432
+              NAME = gitea
+              USER = postgres
+              PASSWD = ${POSTGRES_PASSWORD}
+              SSL_MODE = disable
+
+              [security]
+              INSTALL_LOCK = true
+
+              [server]
+              DOMAIN = localhost
+              ROOT_URL = http://localhost:3000
+              HTTP_PORT = 3000
+              SSH_DOMAIN = localhost
+              SSH_PORT = 222
+              DISABLE_SSH = false
+
+              [service]
+              DISABLE_REGISTRATION = true
+              EOF
+              chown -R git:git /tmp/gitea-init
+              if su-exec git gitea admin user list --config /tmp/gitea-init/app.ini | grep -qE '^[[:space:]]*[0-9]+[[:space:]]+gitea[[:space:]]'; then
+                echo "gitea admin user exists, resetting password"
+                su-exec git gitea admin user change-password \
+                  --config /tmp/gitea-init/app.ini \
+                  --username "gitea" \
+                  --password "$GITEA_ADMIN_PASSWORD" \
+                  --must-change-password=false
+              else
+                echo "creating gitea admin user"
+                su-exec git gitea admin user create \
+                  --config /tmp/gitea-init/app.ini \
+                  --username "gitea" \
+                  --password "$GITEA_ADMIN_PASSWORD" \
+                  --email gitea@localhost \
+                  --admin \
+                  --must-change-password=false
+              fi
+              until curl -fsS \
+                -u "gitea:$GITEA_ADMIN_PASSWORD" \
+                http://test-station-gitea:3000/api/v1/user >/dev/null 2>&1; do
+                echo "waiting for gitea admin auth"
+                sleep 5
+              done
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-station-secret
+                  key: postgres-password
+            - name: GITEA_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-station-secret
+                  key: gitea-admin-password
+      containers:
+        - name: station
+          securityContext:
+            runAsGroup: 0
+            runAsUser: 0
+          image: "ghcr.io/wp-labs/wp-station:v0.1.12-alpha"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - |
+              git config --global user.name "WarpStation"
+              git config --global user.email "station@warpparse.local"
+              exec /app/wp-station
+          env:
+            - name: TZ
+              value: "Asia/Shanghai"
+            - name: WP_STATION__WEB__HOST
+              value: "0.0.0.0"
+            - name: WP_STATION__WEB__PORT
+              value: "8081"
+            - name: WP_STATION__DATABASE__HOST
+              value: "test-station-postgres"
+            - name: WP_STATION__DATABASE__PORT
+              value: "5432"
+            - name: WP_STATION__DATABASE__NAME
+              value: "wp-station"
+            - name: WP_STATION__DATABASE__USERNAME
+              value: "postgres"
+            - name: WP_STATION__DATABASE__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-station-secret
+                  key: postgres-password
+            - name: WP_STATION__GITEA__BASE_URL
+              value: "http://test-station-gitea:3000"
+            - name: WP_STATION__GITEA__USERNAME
+              value: "gitea"
+            - name: WP_STATION__GITEA__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-station-secret
+                  key: gitea-admin-password
+            - name: WP_STATION__FEATURES__DATA_COLLECT_URL
+              value: "http://wp-monitor:18080/wp-monitor"
+            - name: WP_STATION__PROJECT_ROOT
+              value: "project_root"
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+          volumeMounts:
+            - name: station-config
+              mountPath: /app/config/config.toml
+              subPath: config.toml
+              readOnly: true
+            - name: station-config
+              mountPath: /app/tls/CA.crt
+              subPath: CA.crt
+              readOnly: true
+            - name: default-configs
+              mountPath: /app/default_configs
+              readOnly: true
+            - name: toolchain
+              mountPath: /app/toolchain
+              readOnly: true
+            - mountPath: /etc/localtime
+              name: host-time
+              readOnly: true
+      volumes:
+        - name: station-config
+          configMap:
+            name: test-station-config
+        - name: default-configs
+          hostPath:
+            path: "/root/wp-stack/product/default-configs"
+            type: DirectoryOrCreate
+        - name: toolchain
+          emptyDir: {}
+      nodeSelector:
+        kubernetes.io/hostname: dayu01.shmh.dysec
