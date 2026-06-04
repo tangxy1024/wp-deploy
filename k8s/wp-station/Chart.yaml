@@ -1,6 +1,0 @@
-apiVersion: v2
-name: station
-description: A Helm chart for Warp Station stack
-type: application
-version: 0.1.0
-appVersion: "0.1.6-alpha"
