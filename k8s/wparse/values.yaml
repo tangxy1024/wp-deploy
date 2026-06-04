@@ -39,7 +39,7 @@ wparse:
   image:
     repository: ghcr.io/wp-labs/warp-parse-exp
     pullPolicy: IfNotPresent
-    tag: "exp-v0.25.1-14-alpha"
+    tag: "exp-v0.25.1-15-alpha"
   initImage:
     repository: busybox
     pullPolicy: IfNotPresent
